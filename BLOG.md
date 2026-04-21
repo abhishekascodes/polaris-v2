@@ -1,4 +1,4 @@
-# OpenENV AI Policy Engine: Multi-Agent Governance Simulation for LLM Training
+# POLARIS v2: Multi-Agent Governance Simulation for LLM Training
 
 ## TL;DR
 A multi-objective, multi-agent governance simulation where 5 AI ministers negotiate policy decisions under cascading crises. Trained with HuggingFace TRL GRPO — achieved **+19.8% reward improvement** and **0% → 40% survival rate** in 95 seconds on RTX 5080.
@@ -63,7 +63,8 @@ python dashboard_server.py
 ```
 
 ## Links
-- [HuggingFace Space](https://huggingface.co/spaces/abhishekas/openenv-policy-engine)
-- [GitHub Repository](https://github.com/abhishekas/openenv-policy-engine)
+- [HuggingFace Space](https://huggingface.co/spaces/asabhishek/polaris-v2)
+- [GitHub Repository](https://github.com/abhishekascodes/polaris-v2)
+- [Colab Training Notebook](https://github.com/abhishekascodes/polaris-v2/blob/main/POLARIS_v2_Training.ipynb)
 
 Built by **Abhishek A S** for the Meta PyTorch × OpenEnv Hackathon Grand Finale.
