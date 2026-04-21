@@ -21,24 +21,11 @@ if _PROJECT_ROOT not in sys.path:
 
 
 # ------------------------------------------------------------------
-# Try openenv-core first; fall back to standalone FastAPI
+# Always use standalone FastAPI for full control over endpoints
+# and metadata. openenv-core create_app strips custom metadata.
 # ------------------------------------------------------------------
 
-try:
-    from openenv.core.env_server.http_server import create_app
-    from openenv.core.env_server.types import Observation
-
-    from server.policy_environment import PolicyEnvironment
-    from models import PolicyAction
-
-    app = create_app(
-        PolicyEnvironment,
-        PolicyAction,
-        Observation,
-        env_name="ai_policy_engine",
-    )
-
-except ImportError:
+if True:  # Standalone FastAPI (full control)
     import copy
     from typing import Any, Dict, List, Optional
 
