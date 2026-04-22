@@ -311,16 +311,48 @@ export HF_TOKEN="your_key"
 python inference.py
 ```
 
-### Train with TRL
+### Train with GRPO (QLoRA)
 
 ```bash
-python train_trl.py --model gpt2 --steps 200 --episodes 30
-python train_trl.py --plot  # Generate result plots
+# Train Qwen 3B with curriculum ToM reward on RTX 5080
+python train_grpo.py --model Qwen/Qwen2.5-3B-Instruct --steps 100 --episodes 30
 ```
 
 ### View Dashboard
 
 Open `http://localhost:7860` in your browser to see the real-time negotiation dashboard.
+
+---
+
+## 🚀 Training Results — GRPO on RTX 5080
+
+### Qwen 2.5 3B Instruct (QLoRA 4-bit, 100 GRPO steps, 13 minutes)
+
+| Metric | Before Training | After GRPO | Change |
+|--------|:-:|:-:|:-:|
+| **Avg Episode Reward** | 13.4 | **30.2** | **+126.3%** ✅ |
+| **Survival Rate** | 0/5 | **1/5** | First survival |
+| **Training Time** | — | 788s | RTX 5080 Laptop |
+| **Trainable Params** | — | 29.9M / 1.73B | 1.73% (LoRA) |
+
+### Curriculum Escalation (Post-Training)
+
+| Difficulty | Chaos | Avg Reward | Survived | 
+|:-:|:-:|:-:|:-:|
+| 🟢 Easy | 0.0 | **40.8** | **3/3** |
+| 🟡 Medium | 0.3 | **38.3** | **2/3** |
+| 🔴 Hard | 0.6 | 24.9 | 0/3 |
+| 🟣 Extreme | 1.0 | 22.7 | 0/3 |
+
+### Llama 3.3 70B Benchmark (via Groq API)
+
+| Task | Score | Notes |
+|------|:-----:|-------|
+| Environment Recovery (Easy) | **0.96** | Single-objective, trivial |
+| Negotiation Arena | **0.22** | 77% collapse under multi-agent pressure |
+| Theory-of-Mind Accuracy | **0%** | Frontier LLM cannot predict minister vetoes |
+
+> **Key finding:** Llama 70B scores 0.96 on easy tasks but collapses to 0.22 on multi-agent negotiation. POLARIS creates genuine difficulty that scales with agent sophistication.
 
 ---
 
@@ -347,7 +379,8 @@ openenv/
 │   └── app.js                  # Dashboard engine
 ├── dashboard.html              # Real-time negotiation dashboard
 ├── inference.py                # LLM inference with structured output
-├── train_trl.py                # TRL GRPO training pipeline
+├── train_grpo.py               # GRPO training with curriculum ToM reward
+├── POLARIS_v3_Demo.ipynb        # Colab demo notebook
 ├── openenv.yaml                # OpenEnv manifest
 ├── requirements.txt            # Dependencies
 ├── Dockerfile                  # Container deployment
