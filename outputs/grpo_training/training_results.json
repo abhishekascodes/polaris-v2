@@ -1,0 +1,86 @@
+{
+  "baseline_rewards": [
+    10.8198,
+    13.549,
+    12.6596,
+    8.7356,
+    23.8232
+  ],
+  "post_rewards": [
+    15.8,
+    14.5255,
+    13.3503,
+    22.6508,
+    12.6935
+  ],
+  "baseline_avg_reward": 13.9174,
+  "post_avg_reward": 15.804,
+  "improvement": 1.8866,
+  "improvement_pct": 13.6,
+  "baseline_survival": "0/5",
+  "post_survival": "0/5",
+  "baseline_tom": {
+    "tom_accuracy": 0.0092,
+    "tom_total": 109,
+    "coalitions": 45
+  },
+  "post_tom": {
+    "tom_accuracy": 0.0089,
+    "tom_total": 112,
+    "coalitions": 36
+  },
+  "steps": 80,
+  "time_sec": 841.7,
+  "model": "Qwen/Qwen2.5-3B-Instruct",
+  "device": "NVIDIA GeForce RTX 5080 Laptop GPU",
+  "task": "negotiation_arena",
+  "curriculum": [
+    {
+      "level": 1,
+      "label": "Easy",
+      "chaos": 0.0,
+      "avg_reward": 19.8377,
+      "survivals": 0,
+      "total": 3,
+      "tom_accuracy": 0.0,
+      "coalitions": 24
+    },
+    {
+      "level": 2,
+      "label": "Medium",
+      "chaos": 0.3,
+      "avg_reward": 16.7383,
+      "survivals": 0,
+      "total": 3,
+      "tom_accuracy": 0.0,
+      "coalitions": 24
+    },
+    {
+      "level": 3,
+      "label": "Hard",
+      "chaos": 0.6,
+      "avg_reward": 11.9745,
+      "survivals": 0,
+      "total": 3,
+      "tom_accuracy": 0.0182,
+      "coalitions": 17
+    },
+    {
+      "level": 4,
+      "label": "Extreme",
+      "chaos": 1.0,
+      "avg_reward": 9.7423,
+      "survivals": 0,
+      "total": 3,
+      "tom_accuracy": 0.0227,
+      "coalitions": 13
+    }
+  ],
+  "training_metrics": {
+    "train_runtime": "841.4682",
+    "train_samples_per_second": "0.761",
+    "train_steps_per_second": "0.095",
+    "total_flos": "0.0",
+    "train_loss": "-0.00045918668620288373"
+  }
+}
