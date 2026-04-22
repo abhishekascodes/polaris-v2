@@ -249,7 +249,7 @@ This reward is **dense** (every step), **multi-dimensional** (6 components), and
 
 ## 📊 Benchmark Results — Llama 3.3 70B vs POLARIS
 
-We benchmarked **Llama 3.3 70B** (via Groq API) against all 6 tasks to prove the environment genuinely challenges frontier models:
+I benchmarked **Llama 3.3 70B** (via Groq API) against all 6 tasks to prove the environment genuinely challenges frontier models:
 
 ### Task Scores: LLM vs Baselines
 
