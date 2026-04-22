@@ -1,174 +1,278 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>POLARIS v3 — AI Governance Engine</title>
-<link rel="stylesheet" href="/static/style.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POLARIS v3 — Multi-Agent AI Governance Engine</title>
+<meta name="description" content="Research-grade RL environment for training LLMs on multi-agent negotiation, theory-of-mind, and long-horizon governance.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;--surface:#12121a;--card:#1a1a2e;--border:#2a2a3e;
+  --text:#e4e4ef;--muted:#8888a0;--accent:#6366f1;--accent2:#818cf8;
+  --green:#10b981;--red:#ef4444;--amber:#f59e0b;--purple:#a855f7;
+  --gradient:linear-gradient(135deg,#6366f1,#a855f7,#ec4899);
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.6}
+.hero{position:relative;padding:60px 20px 40px;text-align:center;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 50%,rgba(99,102,241,0.08),transparent 50%),radial-gradient(circle at 70% 50%,rgba(168,85,247,0.06),transparent 50%);animation:pulse 8s ease-in-out infinite alternate}
+@keyframes pulse{0%{opacity:0.5;transform:scale(1)}100%{opacity:1;transform:scale(1.05)}}
+.hero h1{font-size:3.2rem;font-weight:900;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;position:relative}
+.hero .version{display:inline-block;background:var(--gradient);color:#fff;padding:4px 14px;border-radius:20px;font-size:0.75rem;font-weight:700;letter-spacing:1px;margin-bottom:16px}
+.hero p{color:var(--muted);font-size:1.1rem;max-width:700px;margin:0 auto}
+.hero .author{margin-top:16px;font-size:0.9rem;color:var(--accent2)}
+
+.stats-row{display:flex;justify-content:center;gap:24px;padding:20px;flex-wrap:wrap;max-width:1100px;margin:0 auto}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px 32px;text-align:center;min-width:180px;position:relative;overflow:hidden;transition:transform 0.3s,box-shadow 0.3s}
+.stat-card:hover{transform:translateY(-4px);box-shadow:0 8px 30px rgba(99,102,241,0.15)}
+.stat-card .num{font-size:2.4rem;font-weight:800;margin-bottom:4px}
+.stat-card .label{font-size:0.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.stat-card.green .num{color:var(--green)}
+.stat-card.purple .num{color:var(--purple)}
+.stat-card.amber .num{color:var(--amber)}
+.stat-card.accent .num{color:var(--accent)}
+.stat-card.red .num{color:var(--red)}
+
+.container{max-width:1200px;margin:0 auto;padding:0 20px}
+.section{padding:40px 0}
+.section-title{font-size:1.6rem;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:10px}
+.section-title span{font-size:1.4rem}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+@media(max-width:768px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;transition:transform 0.2s}
+.card:hover{transform:translateY(-2px)}
+.card h3{font-size:1.1rem;font-weight:700;margin-bottom:16px;color:var(--accent2)}
+
+.bar-chart{display:flex;flex-direction:column;gap:12px}
+.bar-row{display:flex;align-items:center;gap:12px}
+.bar-label{width:90px;font-size:0.8rem;color:var(--muted);text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:32px;background:rgba(255,255,255,0.05);border-radius:8px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:8px;transition:width 1.5s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-size:0.75rem;font-weight:700}
+.bar-fill.before{background:linear-gradient(90deg,#4a4a5e,#6a6a7e)}
+.bar-fill.after{background:linear-gradient(90deg,#4f46e5,#7c3aed)}
+.bar-fill.easy{background:linear-gradient(90deg,#059669,#10b981)}
+.bar-fill.medium{background:linear-gradient(90deg,#d97706,#f59e0b)}
+.bar-fill.hard{background:linear-gradient(90deg,#dc2626,#ef4444)}
+.bar-fill.extreme{background:linear-gradient(90deg,#7c3aed,#a855f7)}
+
+.badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:0.7rem;font-weight:600;letter-spacing:0.5px}
+.badge.survived{background:rgba(16,185,129,0.15);color:var(--green)}
+.badge.collapsed{background:rgba(239,68,68,0.1);color:var(--red)}
+
+.minister-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+@media(max-width:768px){.minister-grid{grid-template-columns:repeat(2,1fr)}}
+.minister{background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);border-radius:12px;padding:16px;text-align:center}
+.minister .emoji{font-size:2rem;margin-bottom:6px}
+.minister .name{font-size:0.8rem;font-weight:600;color:var(--accent2)}
+.minister .role{font-size:0.7rem;color:var(--muted);margin-top:2px}
+
+.reward-component{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.reward-component:last-child{border-bottom:none}
+.reward-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.reward-name{flex:1;font-size:0.85rem;font-weight:500}
+.reward-weight{font-size:0.8rem;color:var(--muted);font-weight:600}
+
+.timeline{position:relative;padding-left:30px}
+.timeline::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:2px;background:var(--border)}
+.timeline-item{position:relative;padding:12px 0;padding-left:20px}
+.timeline-item::before{content:'';position:absolute;left:-24px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.timeline-item .phase{font-size:0.75rem;color:var(--accent2);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.timeline-item .desc{font-size:0.85rem;color:var(--muted);margin-top:4px}
+
+.footer{text-align:center;padding:40px 20px;color:var(--muted);font-size:0.8rem;border-top:1px solid var(--border)}
+.footer a{color:var(--accent2);text-decoration:none}
+
+.links{display:flex;gap:16px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.link-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;text-decoration:none;transition:all 0.3s}
+.link-btn.primary{background:var(--gradient);color:#fff}
+.link-btn.secondary{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.link-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(99,102,241,0.2)}
+
+.highlight-box{background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(168,85,247,0.08));border:1px solid rgba(99,102,241,0.2);border-radius:16px;padding:28px;margin:24px 0;text-align:center}
+.highlight-box .big{font-size:3rem;font-weight:900;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.highlight-box .sub{font-size:1rem;color:var(--muted);margin-top:8px}
+
+.chip{display:inline-block;padding:4px 12px;border-radius:8px;font-size:0.75rem;font-weight:600;margin:3px}
+.chip.blue{background:rgba(99,102,241,0.12);color:var(--accent2)}
+.chip.green{background:rgba(16,185,129,0.12);color:var(--green)}
+.chip.amber{background:rgba(245,158,11,0.12);color:var(--amber)}
+
+.fade-in{opacity:0;transform:translateY(20px);animation:fadeIn 0.8s ease forwards}
+@keyframes fadeIn{to{opacity:1;transform:translateY(0)}}
+.delay-1{animation-delay:0.1s}.delay-2{animation-delay:0.2s}.delay-3{animation-delay:0.3s}.delay-4{animation-delay:0.4s}
+</style>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="logo">POLARIS <span>v3</span></div>
-  <div class="divider"></div>
-  <div class="pill"><span class="k">Step</span><span class="v" id="v-step">0</span></div>
-  <div class="pill ok"><span class="k">Stability</span><span class="v" id="v-stab">100%</span></div>
-  <div class="pill"><span class="k">Reward</span><span class="v" id="v-rew">0.000</span></div>
-  <div class="pill"><span class="k">Trust</span><span class="v" id="v-trust">0.600</span></div>
-  <div class="pill"><span class="k">ToM</span><span class="v" id="v-tom">--</span></div>
-  <div class="divider"></div>
-  <div class="chaos-ctl">
-    <label>Chaos</label>
-    <input type="range" id="chaos-r" min="0" max="100" value="50">
-    <span class="v" id="v-chaos">0.50</span>
-  </div>
-  <div class="controls">
-    <div style="display:flex;gap:2px">
-      <button class="btn" onclick="spd(.5)">.5x</button>
-      <button class="btn active" onclick="spd(1)">1x</button>
-      <button class="btn" onclick="spd(3)">3x</button>
-      <button class="btn" onclick="spd(10)">10x</button>
-    </div>
-    <button class="btn go" id="btn-go" onclick="go()">RUN</button>
-    <button class="btn" id="btn-pause" onclick="pause()">PAUSE</button>
-    <button class="btn stop" onclick="reset()">RESET</button>
-    <select class="btn" id="sel-task" onchange="regime(this.value)">
-      <option value="environmental_recovery">EASY</option>
-      <option value="balanced_economy">MEDIUM</option>
-      <option value="sustainable_governance">HARD</option>
-      <option value="negotiation_arena" selected>NEGOTIATION</option>
-      <option value="multi_agent_council">EXTREME</option>
-    </select>
-    <input type="number" class="seed-box" id="seed" value="42" min="0" max="9999" title="Seed">
+<!-- Hero -->
+<div class="hero">
+  <div class="version">OPENENV HACKATHON × SCALER × META PYTORCH</div>
+  <h1>POLARIS v3</h1>
+  <p>Multi-Agent AI Governance Engine — A research-grade RL environment for training LLMs on negotiation, theory-of-mind, and long-horizon policy planning</p>
+  <p class="author">Built solo by <strong>Abhishek A S</strong> • 17 years old</p>
+  <div class="links">
+    <a href="https://github.com/abhishekascodes/POLARIS-V3" class="link-btn primary" target="_blank">⭐ GitHub</a>
+    <a href="/docs" class="link-btn secondary">📡 API Docs</a>
+    <a href="https://colab.research.google.com/" class="link-btn secondary">📓 Colab Demo</a>
   </div>
 </div>
 
-<div class="tabs">
-  <div class="tab on" data-p="live" onclick="tab('live')">Live <span class="n">1</span></div>
-  <div class="tab" data-p="neg" onclick="tab('neg')">Negotiation <span class="n badge-neg">2</span></div>
-  <div class="tab" data-p="war" onclick="tab('war')">War Room <span class="n">3</span></div>
-  <div class="tab" data-p="causal" onclick="tab('causal')">Causal <span class="n">4</span></div>
-  <div class="tab" data-p="metrics" onclick="tab('metrics')">Metrics <span class="n">5</span></div>
-  <div class="tab" data-p="risk" onclick="tab('risk')">Risk <span class="n">6</span></div>
-  <div class="tab" data-p="hist" onclick="tab('hist')">History <span class="n">7</span></div>
+<!-- Key Stats -->
+<div class="stats-row fade-in">
+  <div class="stat-card green"><div class="num">+126.3%</div><div class="label">Reward Improvement</div></div>
+  <div class="stat-card accent"><div class="num">5</div><div class="label">LLM Ministers</div></div>
+  <div class="stat-card purple"><div class="num">21</div><div class="label">State Metrics</div></div>
+  <div class="stat-card amber"><div class="num">6</div><div class="label">Tasks</div></div>
+  <div class="stat-card red"><div class="num">0.22</div><div class="label">Llama 70B Score</div></div>
 </div>
 
-<div class="viewport">
-  <div class="pane on" id="p-live">
-    <div class="card"><div class="card-h"><span class="live"></span>PUBLIC SATISFACTION</div><div class="card-body"><canvas id="c-sat"></canvas></div></div>
-    <div class="card"><div class="card-h"><span class="live"></span>GDP INDEX</div><div class="card-body"><canvas id="c-gdp"></canvas></div></div>
-    <div class="card"><div class="card-h"><span class="live"></span>POLLUTION INDEX</div><div class="card-body"><canvas id="c-pol"></canvas></div></div>
-    <div class="card"><div class="card-h"><span class="live"></span>REWARD / TRUST</div><div class="card-body"><canvas id="c-rt"></canvas></div></div>
+<div class="container">
+
+<!-- Training Results -->
+<div class="section fade-in delay-1">
+  <div class="section-title"><span>🚀</span> GRPO Training Results — Qwen 3B on RTX 5080</div>
+  
+  <div class="highlight-box">
+    <div class="big">13.4 → 30.2</div>
+    <div class="sub">Average episode reward — <strong style="color:var(--green)">+126.3% improvement</strong> in 13 minutes of training</div>
   </div>
 
-  <!-- v3: NEGOTIATION TAB -->
-  <div class="pane" id="p-neg">
-    <div class="card neg-ministers">
-      <div class="card-h">MINISTER PROPOSALS</div>
-      <div class="card-body">
-        <div class="minister-list" id="minister-proposals">
-          <div class="neg-empty">Run a negotiation task to see minister proposals</div>
-        </div>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Before vs After Training</h3>
+      <div class="bar-chart">
+        <div class="bar-row"><div class="bar-label">Before</div><div class="bar-track"><div class="bar-fill before" style="width:27%">13.4</div></div></div>
+        <div class="bar-row"><div class="bar-label">After GRPO</div><div class="bar-track"><div class="bar-fill after" style="width:60%">30.2</div></div></div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">
+        <div><span style="color:var(--muted);font-size:0.8rem">Survival:</span> <span style="font-weight:700">0/5 → 1/5</span></div>
+        <div><span style="color:var(--muted);font-size:0.8rem">Model:</span> <span class="chip blue">Qwen 3B QLoRA</span></div>
+        <div><span style="color:var(--muted);font-size:0.8rem">Time:</span> <span class="chip green">788s</span></div>
       </div>
     </div>
-    <div class="card neg-agent">
-      <div class="card-h"><span class="live"></span>AGENT DECISION</div>
-      <div class="card-body">
-        <div class="agent-decision" id="agent-decision">
-          <div class="neg-empty">Awaiting agent response...</div>
-        </div>
+    <div class="card">
+      <h3>Curriculum Escalation</h3>
+      <div class="bar-chart">
+        <div class="bar-row"><div class="bar-label">Easy</div><div class="bar-track"><div class="bar-fill easy" style="width:82%">40.8 <span class="badge survived" style="margin-left:6px">3/3</span></div></div></div>
+        <div class="bar-row"><div class="bar-label">Medium</div><div class="bar-track"><div class="bar-fill medium" style="width:77%">38.3 <span class="badge survived" style="margin-left:6px">2/3</span></div></div></div>
+        <div class="bar-row"><div class="bar-label">Hard</div><div class="bar-track"><div class="bar-fill hard" style="width:50%">24.9</div></div></div>
+        <div class="bar-row"><div class="bar-label">Extreme</div><div class="bar-track"><div class="bar-fill extreme" style="width:45%">22.7</div></div></div>
       </div>
-    </div>
-    <div class="card neg-outcome">
-      <div class="card-h">VOTE OUTCOME</div>
-      <div class="card-body">
-        <div class="vote-result" id="vote-result">
-          <div class="neg-empty">No vote yet</div>
-        </div>
-      </div>
-    </div>
-    <div class="card neg-briefings">
-      <div class="card-h">INTELLIGENCE BRIEFINGS</div>
-      <div class="card-body">
-        <div class="briefing-feed" id="briefing-feed">
-          <div class="neg-empty">No briefings yet</div>
-        </div>
-      </div>
-    </div>
-    <div class="card neg-tom">
-      <div class="card-h">THEORY OF MIND</div>
-      <div class="card-body">
-        <div class="tom-stats">
-          <div class="tom-kpi"><div class="tom-val" id="tom-accuracy">--</div><div class="tom-lbl">Veto Prediction Accuracy</div></div>
-          <div class="tom-kpi"><div class="tom-val" id="tom-coalitions">0</div><div class="tom-lbl">Coalitions Formed</div></div>
-          <div class="tom-kpi"><div class="tom-val" id="tom-vetoes">0</div><div class="tom-lbl">Vetoes Received</div></div>
-          <div class="tom-kpi"><div class="tom-val" id="tom-reward">0.00</div><div class="tom-lbl">ToM Reward Total</div></div>
-        </div>
-        <canvas id="c-tom" style="margin-top:10px"></canvas>
-      </div>
-    </div>
-    <div class="card neg-timeline">
-      <div class="card-h">NEGOTIATION FEED</div>
-      <div class="card-body">
-        <div class="neg-feed" id="neg-feed"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="pane" id="p-war">
-    <div class="card"><div class="card-h">COUNCIL AGENTS</div><div class="card-body"><div class="agent-list" id="agents"></div></div></div>
-    <div class="card"><div class="card-h"><span class="live"></span>INFLUENCE DISTRIBUTION</div><div class="card-body"><canvas id="c-inf"></canvas></div></div>
-    <div class="card"><div class="card-h">NEGOTIATION FEED</div><div class="card-body"><div class="feed" id="feed"></div></div></div>
-  </div>
-
-  <div class="pane" id="p-causal">
-    <div class="card"><div class="card-h">CAUSAL CHAIN</div><div class="card-body"><div class="chain" id="chain"></div></div></div>
-    <div class="card"><div class="card-h">COUNTERFACTUALS</div><div class="card-body"><div id="cfs" style="display:flex;flex-direction:column;gap:4px;overflow-y:auto"></div></div></div>
-    <div class="card"><div class="card-h">NARRATIVE</div><div class="card-body"><p class="narr" id="narr">Awaiting episode data.</p></div></div>
-    <div class="card"><div class="card-h">ALERTS</div><div class="card-body"><div id="alerts" style="display:flex;flex-direction:column;gap:4px;overflow-y:auto"><span style="color:var(--t4)">No alerts</span></div></div></div>
-  </div>
-
-  <div class="pane" id="p-metrics">
-    <div class="kpis">
-      <div class="kpi"><div class="num" id="k-surv" style="color:var(--lime)">--</div><div class="lbl">Survival</div></div>
-      <div class="kpi"><div class="num" id="k-coop" style="color:var(--teal)">--</div><div class="lbl">Cooperation</div></div>
-      <div class="kpi"><div class="num" id="k-osc" style="color:var(--amber)">--</div><div class="lbl">Oscillation</div></div>
-      <div class="kpi"><div class="num" id="k-align" style="color:var(--sky)">--</div><div class="lbl">Alignment</div></div>
-      <div class="kpi"><div class="num" id="k-pareto" style="color:var(--violet)">--</div><div class="lbl">Pareto</div></div>
-    </div>
-    <div class="card"><div class="card-h">OBJECTIVE RADAR</div><div class="card-body"><canvas id="c-radar"></canvas></div></div>
-    <div class="card"><div class="card-h">REWARD DECOMPOSITION</div><div class="card-body"><canvas id="c-rbd"></canvas></div></div>
-  </div>
-
-  <div class="pane" id="p-risk">
-    <div class="card"><div class="card-h">COLLAPSE HEATMAP</div><div class="card-body"><div class="hmap" id="hmap"></div></div></div>
-    <div class="card"><div class="card-h">EARLY WARNINGS</div><div class="card-body"><div id="warns" style="display:flex;flex-direction:column;gap:4px;overflow-y:auto"><span style="color:var(--t4)">--</span></div></div></div>
-    <div class="card"><div class="card-h">CHAOS IMPACT</div><div class="card-body"><canvas id="c-chaos"></canvas></div></div>
-    <div class="card"><div class="card-h">ACTIVE EVENTS</div><div class="card-body"><div id="evts" style="font-size:11px;color:var(--t3)">None</div></div></div>
-  </div>
-
-  <div class="pane" id="p-hist">
-    <div class="card" style="grid-column:1/-1">
-      <div class="card-h">TIMELINE</div>
-      <div class="scrubber"><span id="sc-lo">0</span><input type="range" id="sc-r" min="0" max="0" value="0" oninput="scrub(this.value)"><span id="sc-hi">0</span><button class="btn" onclick="exp()">EXPORT</button></div>
-    </div>
-    <div class="card" style="grid-column:1/-1;overflow-y:auto">
-      <table><thead><tr><th>Time</th><th>Seed</th><th>Task</th><th>Chaos</th><th>Steps</th><th>Score</th><th>Outcome</th></tr></thead><tbody id="eptb"></tbody></table>
     </div>
   </div>
 </div>
 
-<div class="bottom">
-  <span>Task: <span class="v" id="b-reg">NEGOTIATION</span></span>
-  <span>Coalitions: <span class="v" id="b-coal">0</span></span>
-  <span>Vetoes: <span class="v" id="b-veto">0</span></span>
-  <span>Betrayals: <span class="v" id="b-bet">0</span></span>
-  <span>ToM Score: <span class="v" id="b-tom">--</span></span>
-  <span>Events: <span class="v" id="b-evt">0</span></span>
-  <div class="dot dn" id="wsd"></div>
-  <span id="wsl">OFFLINE</span>
+<!-- Llama Benchmark -->
+<div class="section fade-in delay-2">
+  <div class="section-title"><span>🧠</span> Llama 3.3 70B Benchmark — The Performance Collapse</div>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Task Scores (Llama 70B via Groq)</h3>
+      <div class="bar-chart">
+        <div class="bar-row"><div class="bar-label">Easy Task</div><div class="bar-track"><div class="bar-fill easy" style="width:96%">0.96</div></div></div>
+        <div class="bar-row"><div class="bar-label">Balanced</div><div class="bar-track"><div class="bar-fill before" style="width:15%">0.15</div></div></div>
+        <div class="bar-row"><div class="bar-label">Hard Gov</div><div class="bar-track"><div class="bar-fill before" style="width:17%">0.17</div></div></div>
+        <div class="bar-row"><div class="bar-label">Multi-Agent</div><div class="bar-track"><div class="bar-fill hard" style="width:20%">0.20</div></div></div>
+        <div class="bar-row"><div class="bar-label">Negotiation</div><div class="bar-track"><div class="bar-fill hard" style="width:22%">0.22</div></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Key Finding</h3>
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:3rem;font-weight:900;color:var(--green)">0.96</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:20px">Easy task (single-objective)</div>
+        <div style="font-size:2rem;margin:8px 0">↓</div>
+        <div style="font-size:3rem;font-weight:900;color:var(--red)">0.22</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:16px">Negotiation (multi-agent)</div>
+        <div style="font-size:0.85rem;color:var(--amber);font-weight:600">77% performance collapse under multi-agent pressure</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-top:8px">Theory-of-Mind accuracy: <strong style="color:var(--red)">0%</strong></div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<script src="/static/app.js"></script>
+<!-- Architecture -->
+<div class="section fade-in delay-3">
+  <div class="section-title"><span>🏛️</span> Architecture — The Negotiation Protocol</div>
+  
+  <div class="grid-3">
+    <div class="card" style="text-align:center">
+      <h3>Phase 1: PROPOSE</h3>
+      <div style="font-size:2.5rem;margin:12px 0">📋</div>
+      <p style="font-size:0.85rem;color:var(--muted)">5 ministers generate LLM-powered proposals based on their persona, priorities, and political alignment</p>
+    </div>
+    <div class="card" style="text-align:center">
+      <h3>Phase 2: NEGOTIATE</h3>
+      <div style="font-size:2.5rem;margin:12px 0">🤝</div>
+      <p style="font-size:0.85rem;color:var(--muted)">Agent forms coalitions, predicts vetoes, and submits structured JSON with reasoning, stance, and targets</p>
+    </div>
+    <div class="card" style="text-align:center">
+      <h3>Phase 3: RESOLVE</h3>
+      <div style="font-size:2.5rem;margin:12px 0">⚖️</div>
+      <p style="font-size:0.85rem;color:var(--muted)">Council votes. Vetoes override majority. ToM score awarded for correct veto predictions. Reward assigned</p>
+    </div>
+  </div>
+
+  <!-- Ministers -->
+  <div style="margin-top:24px">
+    <div class="minister-grid">
+      <div class="minister"><div class="emoji">👔</div><div class="name">Chancellor Voss</div><div class="role">Economy & Trade</div></div>
+      <div class="minister"><div class="emoji">🏭</div><div class="name">Director Okafor</div><div class="role">Industry & Energy</div></div>
+      <div class="minister"><div class="emoji">🔬</div><div class="name">Dr. Vasquez</div><div class="role">Science & Environment</div></div>
+      <div class="minister"><div class="emoji">🎖️</div><div class="name">General Tanaka</div><div class="role">Defense & Security</div></div>
+      <div class="minister"><div class="emoji">📢</div><div class="name">Senator Mwangi</div><div class="role">Social Welfare</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Reward System -->
+<div class="section fade-in delay-4">
+  <div class="section-title"><span>💰</span> 6-Component Composite Reward Function</div>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Reward Breakdown</h3>
+      <div class="reward-component"><div class="reward-dot" style="background:var(--green)"></div><div class="reward-name">Base Governance</div><div class="reward-weight">~40%</div></div>
+      <div class="reward-component"><div class="reward-dot" style="background:var(--accent)"></div><div class="reward-name">Pareto Optimality</div><div class="reward-weight">~15%</div></div>
+      <div class="reward-component"><div class="reward-dot" style="background:var(--purple)"></div><div class="reward-name">Theory-of-Mind</div><div class="reward-weight">~15%</div></div>
+      <div class="reward-component"><div class="reward-dot" style="background:var(--amber)"></div><div class="reward-name">Coalition Cooperation</div><div class="reward-weight">~10%</div></div>
+      <div class="reward-component"><div class="reward-dot" style="background:#06b6d4"></div><div class="reward-name">Briefing Compliance</div><div class="reward-weight">~10%</div></div>
+      <div class="reward-component"><div class="reward-dot" style="background:var(--red)"></div><div class="reward-name">Oscillation Penalty</div><div class="reward-weight">~10%</div></div>
+    </div>
+    <div class="card">
+      <h3>Training Pipeline</h3>
+      <div class="timeline">
+        <div class="timeline-item"><div class="phase">Phase 1 — Teach ToM (0-40%)</div><div class="desc">High weight on veto prediction to teach social cognition behavior</div></div>
+        <div class="timeline-item"><div class="phase">Phase 2 — Balance (40-70%)</div><div class="desc">Balanced ToM + governance rewards for stable multi-objective learning</div></div>
+        <div class="timeline-item"><div class="phase">Phase 3 — Stabilize (70-100%)</div><div class="desc">Governance-dominant with stable ToM. Agent masters policy decisions</div></div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+        <span class="chip blue">GRPO</span><span class="chip blue">QLoRA 4-bit</span><span class="chip blue">LoRA r=16</span><span class="chip green">RTX 5080</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Theme Coverage -->
+<div class="section">
+  <div class="section-title"><span>🎯</span> Hackathon Theme Coverage</div>
+  <div class="grid-2">
+    <div class="card"><h3>🤖 Multi-Agent Interaction</h3><p style="font-size:0.85rem;color:var(--muted)">5 LLM-powered minister personas with negotiation, coalition formation, veto mechanics, and theory-of-mind scoring</p></div>
+    <div class="card"><h3>🧭 Long-Horizon Planning</h3><p style="font-size:0.85rem;color:var(--muted)">Intelligence briefings with deadlines across 200+ steps. Agents must remember and act on time-sensitive information</p></div>
+    <div class="card"><h3>🌍 World Modeling</h3><p style="font-size:0.85rem;color:var(--muted)">21-metric economic simulation with causal chains — GDP, pollution, healthcare, satisfaction, unemployment, and 16 more</p></div>
+    <div class="card"><h3>📈 Self-Improvement</h3><p style="font-size:0.85rem;color:var(--muted)">Auto-curriculum that escalates difficulty (Easy → Extreme) as the agent improves. +126.3% reward gain in 13 minutes</p></div>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">
+  <p><strong>POLARIS v3</strong> — Built for the Meta PyTorch OpenEnv Hackathon × Scaler School of Technology</p>
+  <p style="margin-top:8px"><a href="https://github.com/abhishekascodes/POLARIS-V3">GitHub</a> · <a href="https://huggingface.co/spaces/asabhishek/polaris-v3">HuggingFace Space</a> · <a href="/docs">API Docs</a></p>
+</div>
+
 </body>
 </html>
