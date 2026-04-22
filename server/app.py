@@ -30,6 +30,8 @@ if True:  # Standalone FastAPI (full control)
     from typing import Any, Dict, List, Optional
 
     from fastapi import FastAPI
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import HTMLResponse, FileResponse
     from pydantic import BaseModel, Field
 
     from server.policy_environment import PolicyEnvironment
@@ -43,8 +45,21 @@ if True:  # Standalone FastAPI (full control)
             "agents under multi-objective, temporally-dependent decision "
             "constraints."
         ),
-        version="1.0.0",
+        version="3.0.0",
     )
+
+    # ── Static files & Dashboard ──
+    _static_dir = os.path.join(_PROJECT_ROOT, "static")
+    if os.path.isdir(_static_dir):
+        app.mount("/static", StaticFiles(directory=_static_dir), name="static")
+
+    _dashboard_path = os.path.join(_PROJECT_ROOT, "dashboard.html")
+
+    @app.get("/", response_class=HTMLResponse)
+    async def root():
+        if os.path.exists(_dashboard_path):
+            return FileResponse(_dashboard_path)
+        return HTMLResponse("<h1>POLARIS v3 — API is running</h1><p>Visit <a href='/docs'>/docs</a> for API documentation.</p>")
 
     # ── Request / Response models ──
 
