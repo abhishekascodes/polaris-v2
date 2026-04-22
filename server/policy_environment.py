@@ -1,21 +1,24 @@
 """
-AI Policy Engine — Core Environment Implementation (v2 — Nuclear Upgrade)
+AI Policy Engine — Core Environment Implementation (v3 — POLARIS)
 
-Orchestrates all upgraded sub-engines:
+Orchestrates all sub-engines:
   - TransitionEngine (v2): cross-layer feedback, state-dep delayed effects
   - EventEngine (v2): sigmoid probs, chaining, memory bias
-  - DriftEngine (NEW): non-stationary drift on 6 variables
-  - MultiAgentCouncil (NEW): 5 ministers, voting, coalition, credit
+  - DriftEngine: non-stationary drift on 6 variables
+  - MultiAgentCouncil: 5 ministers, voting, coalition, credit
   - RewardEngine (v2): Pareto, long-horizon, cooperation
   - ExplainabilityEngine (v2): counterfactuals, alignment, NL narrative
+  - NegotiationProtocol (v3 NEW): LLM-powered minister negotiation
+  - BriefingEngine (v3 NEW): long-horizon memory challenges
 
-Rich 55-dimensional observation:
+Rich 55-dimensional observation + negotiation context:
   21 core state dims
   + 5 agent influence
   + 15 risk heatmap (5 metrics x 3 horizons)
   + 8 action history
   + 1 institutional trust
   + 5 coalition status
+  + negotiation context (minister proposals, briefings)
 """
 
 from __future__ import annotations
@@ -73,15 +76,22 @@ from .multi_agent_council import MultiAgentCouncil
 from .reward_engine import RewardEngine
 from .tasks import grade_trajectory
 from .transition_engine import TransitionEngine
+from .negotiation_protocol import NegotiationProtocol, AgentResponse
+from .briefing_engine import BriefingEngine
 
 
 class PolicyEnvironment(Environment):
     """
-    AI Policy Engine — multi-objective governance simulation (v2).
+    AI Policy Engine — multi-objective governance simulation (v3 POLARIS).
 
     55-dimensional observation space. 5-minister multi-agent council.
     Non-stationary drift. Intelligent event chaining. Advanced reward.
     Research-grade explainability with counterfactuals and alignment scoring.
+
+    v3 additions:
+      - LLM-powered negotiation protocol (ministers propose, agent negotiates)
+      - Diplomatic briefing system (long-horizon memory challenges)
+      - Theory-of-mind reward (veto prediction scoring)
     """
 
     SUPPORTS_CONCURRENT_SESSIONS = True
@@ -98,13 +108,21 @@ class PolicyEnvironment(Environment):
         self._max_steps: int = 50
         self._done: bool = False
 
-        # Sub-engines
+        # Sub-engines (v2)
         self._transition = TransitionEngine()
         self._events = EventEngine()
         self._drift = DriftEngine()
         self._council = MultiAgentCouncil()
         self._reward_eng = RewardEngine()
         self._explainer = ExplainabilityEngine()
+
+        # v3 engines
+        self._negotiation = NegotiationProtocol(mode="scripted")
+        self._briefing = BriefingEngine()
+        self._negotiation_enabled = False
+        self._briefing_enabled = False
+        self._last_negotiation_context = None
+        self._last_negotiation_outcome = None
 
         # Episode-level counters
         self._total_resolved_delayed: int = 0
@@ -167,12 +185,43 @@ class PolicyEnvironment(Environment):
         self._reward_eng.reset()
         self._explainer.reset()
 
+        # v3: Negotiation protocol
+        self._negotiation_enabled = cfg.get("negotiation_enabled", num_ministers >= 2)
+        self._briefing_enabled = cfg.get("briefing_enabled", cfg.get("events_enabled", False))
+        minister_mode = cfg.get("minister_mode", "scripted")
+        self._negotiation = NegotiationProtocol(mode=minister_mode)
+        self._negotiation.reset(seed=real_seed, num_ministers=num_ministers)
+        self._last_negotiation_context = None
+        self._last_negotiation_outcome = None
+
+        # v3: Briefing engine
+        difficulty_map = {"environmental_recovery": "easy", "balanced_economy": "medium",
+                          "sustainable_governance": "hard", "sustainable_governance_extreme": "extreme",
+                          "multi_agent_council": "extreme"}
+        if self._briefing_enabled:
+            self._briefing.reset(
+                seed=real_seed,
+                difficulty=difficulty_map.get(self._task_id, "medium"),
+                max_steps=self._max_steps,
+                minister_names=self._negotiation.get_minister_names(),
+            )
+
         self._state_obj = State(
             episode_id=episode_id or str(uuid4()),
             step_count=0,
         )
 
         obs_meta = self._build_observation_metadata(reward_breakdown=None)
+
+        # v3: Generate initial negotiation context
+        if self._negotiation_enabled:
+            init_ctx = self._negotiation.phase_propose(
+                self._world, [], 0, briefing="Welcome. The council awaits your leadership."
+            )
+            obs_meta["negotiation"] = init_ctx.to_dict()
+            obs_meta["negotiation_narrative"] = init_ctx.to_narrative()
+            self._last_negotiation_context = init_ctx
+
         self._trajectory.append(copy.deepcopy(obs_meta))
 
         return Observation(done=False, reward=0.0, metadata=obs_meta)
@@ -191,28 +240,37 @@ class PolicyEnvironment(Environment):
             obs_meta = self._build_observation_metadata(reward_breakdown=None)
             return Observation(done=True, reward=0.0, metadata=obs_meta)
 
-        # --- Parse action string ---
-        action_str = self._parse_action(action)
+        # --- Parse action (supports structured v3 input) ---
+        action_str, agent_response = self._parse_action_v3(action)
 
         # --- Snapshot previous state ---
         self._prev_world = copy.deepcopy(self._world)
 
+        # --- v3: Negotiation resolution ---
+        negotiation_outcome = None
+        tom_reward = 0.0
+        if self._negotiation_enabled and agent_response:
+            negotiation_outcome = self._negotiation.phase_resolve(
+                self._world, agent_response
+            )
+            tom_reward = negotiation_outcome.tom_reward
+            self._last_negotiation_outcome = negotiation_outcome
+            # If vetoed, use the fallback action from negotiation
+            if negotiation_outcome.vetoed:
+                action_str = negotiation_outcome.final_action
+
         # --- Council step (determines or confirms action) ---
-        # In single-agent mode (1 minister), force the external action through.
-        # In multi-agent mode (2+ ministers), let the council negotiate freely;
-        # the external action is just treated as input context.
         num_ministers = self._task_cfg.get("num_ministers", 1)
         if num_ministers <= 1:
             forced = action_str if action_str in VALID_ACTIONS else None
         else:
-            forced = None  # council negotiates freely
+            forced = None
         council_result = self._council.step(
             state=self._world,
             forced_action=forced,
             utility_volatility=self._events.utility_volatility,
         )
-        # In multi-agent mode, council's negotiated action overrides external input
-        if num_ministers > 1:
+        if num_ministers > 1 and not self._negotiation_enabled:
             action_str = council_result["action"]
         elif action_str == "council":
             action_str = council_result["action"]
@@ -297,6 +355,14 @@ class PolicyEnvironment(Environment):
             self._council.get_coalition_survival_ratio()
         )
 
+        # --- v3: Briefing engine step ---
+        briefing_text = ""
+        briefing_reward = 0.0
+        if self._briefing_enabled:
+            briefing_text, briefing_reward = self._briefing.step(
+                self._state_obj.step_count, self._world
+            )
+
         # --- Compute reward ---
         is_terminal = (self._state_obj.step_count + 1 >= self._max_steps)
         alignment_score = council_result.get("alignment_score", 50.0)
@@ -306,6 +372,14 @@ class PolicyEnvironment(Environment):
             alignment_score=alignment_score,
         )
         reward = reward_info["total_reward"]
+
+        # v3: Add theory-of-mind and briefing rewards
+        reward += tom_reward
+        reward += briefing_reward
+        if tom_reward != 0.0:
+            reward_info["tom_reward"] = round(tom_reward, 4)
+        if briefing_reward != 0.0:
+            reward_info["briefing_reward"] = round(briefing_reward, 4)
 
         # --- Generate causal explanation ---
         explanation = self._explainer.explain(
@@ -335,6 +409,29 @@ class PolicyEnvironment(Environment):
             council_result=council_result,
             drift_vars=drift_vars,
         )
+
+        # v3: Add negotiation context for NEXT step
+        if self._negotiation_enabled and not self._done:
+            next_ctx = self._negotiation.phase_propose(
+                self._world, active_events, self._state_obj.step_count,
+                briefing=briefing_text,
+            )
+            obs_meta["negotiation"] = next_ctx.to_dict()
+            obs_meta["negotiation_narrative"] = next_ctx.to_narrative()
+            self._last_negotiation_context = next_ctx
+
+        # v3: Add active briefings
+        if self._briefing_enabled:
+            obs_meta["active_briefings"] = self._briefing.get_active_briefings(
+                self._state_obj.step_count
+            )
+            if briefing_text:
+                obs_meta["new_briefing"] = briefing_text
+
+        # v3: Add negotiation outcome from this step
+        if negotiation_outcome:
+            obs_meta["negotiation_outcome"] = negotiation_outcome.to_dict()
+
         self._trajectory.append(copy.deepcopy(obs_meta))
 
         # --- If done, include final grader score ---
@@ -346,6 +443,8 @@ class PolicyEnvironment(Environment):
             obs_meta["council_summary"] = self._council.get_episode_summary()
             obs_meta["black_swan_events"] = list(self._black_swan_events)
             obs_meta["total_resolved_delayed"] = self._total_resolved_delayed
+            if self._briefing_enabled:
+                obs_meta["briefing_stats"] = self._briefing.get_stats()
 
         return Observation(done=self._done, reward=reward, metadata=obs_meta)
 
@@ -423,6 +522,7 @@ class PolicyEnvironment(Environment):
     # =================================================================
 
     def _parse_action(self, action: Any) -> str:
+        """Legacy action parser — returns action string only."""
         action_str = "no_action"
 
         if isinstance(action, str):
@@ -440,6 +540,33 @@ class PolicyEnvironment(Environment):
             action_str = "no_action"
 
         return action_str
+
+    def _parse_action_v3(self, action: Any) -> tuple:
+        """
+        v3 action parser — returns (action_str, AgentResponse or None).
+        Supports both legacy string actions and structured v3 actions.
+        """
+        if isinstance(action, dict) and "reasoning" in action:
+            # Structured v3 action
+            action_str = action.get("action", "no_action")
+            if action_str not in VALID_ACTIONS:
+                action_str = "no_action"
+            agent_resp = AgentResponse(
+                action=action_str,
+                reasoning=action.get("reasoning", ""),
+                coalition_target=action.get("coalition_target", []),
+                negotiation_argument=action.get("negotiation_argument", ""),
+                veto_prediction=action.get("veto_prediction", []),
+                stance=action.get("stance", "cooperative"),
+            )
+            return action_str, agent_resp
+        else:
+            # Legacy action — wrap in AgentResponse for negotiation
+            action_str = self._parse_action(action)
+            if self._negotiation_enabled:
+                agent_resp = AgentResponse(action=action_str)
+                return action_str, agent_resp
+            return action_str, None
 
     def _check_collapse(self) -> bool:
         for cond_name, (metric, threshold) in COLLAPSE_CONDITIONS.items():

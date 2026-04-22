@@ -340,7 +340,8 @@ TASK_CONFIGS: Dict[str, dict] = {
         "description": (
             "Multi-Agent Council (Extreme+): 5 ministers with emergent negotiation, "
             "coalition formation, vetoes, and dynamic utility vectors. Full chaos "
-            "and non-stationary drift. Designed for multi-agent RL research."
+            "and non-stationary drift. Includes diplomatic briefings and "
+            "theory-of-mind scoring. Designed for multi-agent RL research."
         ),
         "max_steps": 300,
         "events_enabled": True,
@@ -351,6 +352,9 @@ TASK_CONFIGS: Dict[str, dict] = {
         "chaos_level": 0.8,
         "drift_enabled": True,
         "num_ministers": 5,
+        "negotiation_enabled": True,
+        "briefing_enabled": True,
+        "minister_mode": "scripted",  # "llm" for real LLM ministers
         "initial_state_overrides": {
             "pollution_index": 120.0,
             "carbon_emission_rate": 52.0,
@@ -373,6 +377,49 @@ TASK_CONFIGS: Dict[str, dict] = {
             "welfare_spending": 28.0,
             "green_subsidies": 10.0,
             "interest_rate": 5.5,
+        },
+    },
+    "negotiation_arena": {
+        "description": (
+            "Negotiation Arena: The LLM agent must negotiate with 5 AI minister "
+            "personas, form strategic coalitions, predict vetoes, and act on "
+            "diplomatic briefings. Tests theory-of-mind reasoning, multi-agent "
+            "interaction, and long-horizon planning in a governance setting."
+        ),
+        "max_steps": 200,
+        "events_enabled": True,
+        "event_frequency_multiplier": 1.0,
+        "satisfaction_event_scale": 0.8,
+        "satisfaction_floor_damping": 0.4,
+        "crisis_welfare_bonus": 5.0,
+        "chaos_level": 0.6,
+        "drift_enabled": True,
+        "num_ministers": 5,
+        "negotiation_enabled": True,
+        "briefing_enabled": True,
+        "minister_mode": "scripted",
+        "initial_state_overrides": {
+            "pollution_index": 130.0,
+            "carbon_emission_rate": 50.0,
+            "renewable_energy_ratio": 0.18,
+            "ecological_stability": 60.0,
+            "gdp_index": 90.0,
+            "industrial_output": 55.0,
+            "unemployment_rate": 9.0,
+            "inflation_rate": 3.0,
+            "trade_balance": 1.0,
+            "foreign_investment": 48.0,
+            "public_satisfaction": 55.0,
+            "healthcare_index": 50.0,
+            "education_index": 48.0,
+            "inequality_index": 42.0,
+            "energy_efficiency": 46.0,
+            "transport_efficiency": 45.0,
+            "tax_rate": 25.0,
+            "regulation_strength": 35.0,
+            "welfare_spending": 25.0,
+            "green_subsidies": 8.0,
+            "interest_rate": 5.0,
         },
     },
 }

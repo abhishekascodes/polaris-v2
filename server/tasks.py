@@ -236,6 +236,83 @@ def _compute_resilience(trajectory: List[Dict]) -> float:
     return statistics.mean(drops)
 
 
+def grade_negotiation_arena(trajectory: List[Dict]) -> float:
+    """
+    Task grader — Negotiation Arena.
+
+    Scoring breakdown:
+      25 %  No collapse (binary)
+      25 %  Multi-metric balance
+      20 %  Negotiation quality (coalition formation + ToM accuracy)
+      15 %  Briefing compliance
+      15 %  Volatility control
+    """
+    if not trajectory:
+        return 0.0
+
+    # -- Collapse check --
+    collapsed = any(
+        t.get("gdp_index", 100) < 15
+        or t.get("pollution_index", 100) > 290
+        or t.get("public_satisfaction", 50) < 5
+        for t in trajectory
+    )
+    collapse_score = 0.0 if collapsed else 1.0
+
+    # -- Multi-metric balance --
+    step_scores = []
+    for t in trajectory:
+        econ = _norm(t.get("gdp_index", 0), 0, 200)
+        env = _inv(t.get("pollution_index", 300), 0, 300)
+        soc = _norm(t.get("public_satisfaction", 0), 0, 100)
+        composite = 0.33 * econ + 0.34 * env + 0.33 * soc
+        step_scores.append(composite)
+    balance_score = statistics.mean(step_scores) if step_scores else 0.0
+
+    # -- Negotiation quality --
+    coalitions_formed = 0
+    tom_correct = 0
+    tom_total = 0
+    for t in trajectory:
+        outcome = t.get("negotiation_outcome", {})
+        if outcome.get("coalition_formed"):
+            coalitions_formed += 1
+        if "veto_prediction_correct" in outcome:
+            tom_total += 1
+            if outcome["veto_prediction_correct"]:
+                tom_correct += 1
+
+    coalition_rate = coalitions_formed / max(len(trajectory), 1)
+    tom_accuracy = tom_correct / max(tom_total, 1) if tom_total > 0 else 0.5
+    negotiation_score = 0.5 * min(1.0, coalition_rate * 2) + 0.5 * tom_accuracy
+
+    # -- Briefing compliance --
+    briefing_stats = trajectory[-1].get("briefing_stats", {}) if trajectory else {}
+    total_b = briefing_stats.get("total_briefings", 0)
+    resolved_b = briefing_stats.get("resolved", 0)
+    briefing_score = resolved_b / max(total_b, 1) if total_b > 0 else 0.5
+
+    # -- Volatility --
+    metric_stds: List[float] = []
+    for key in ["gdp_index", "pollution_index", "public_satisfaction"]:
+        lo, hi = STATE_BOUNDS.get(key, (0, 100))
+        span = hi - lo if hi > lo else 1.0
+        values = [t.get(key, 0) / span for t in trajectory]
+        if len(values) >= 2:
+            metric_stds.append(statistics.stdev(values))
+    avg_std = statistics.mean(metric_stds) if metric_stds else 0.0
+    volatility_score = max(0.0, min(1.0, 1.0 - avg_std / 0.12))
+
+    score = (
+        0.25 * collapse_score
+        + 0.25 * balance_score
+        + 0.20 * negotiation_score
+        + 0.15 * briefing_score
+        + 0.15 * volatility_score
+    )
+    return round(max(0.0, min(1.0, score)), 4)
+
+
 # =====================================================================
 # Public grading API
 # =====================================================================
@@ -244,7 +321,9 @@ GRADERS = {
     "environmental_recovery": grade_environmental_recovery,
     "balanced_economy": grade_balanced_economy,
     "sustainable_governance": grade_sustainable_governance,
-    "sustainable_governance_extreme": grade_sustainable_governance,  # same grader, harder config
+    "sustainable_governance_extreme": grade_sustainable_governance,
+    "multi_agent_council": grade_negotiation_arena,
+    "negotiation_arena": grade_negotiation_arena,
 }
 
 
@@ -253,8 +332,7 @@ def grade_trajectory(task_id: str, trajectory: List[Dict]) -> float:
     Score a trajectory for the given task. Returns 0.0–1.0.
 
     Args:
-        task_id: One of "environmental_recovery", "balanced_economy",
-                 "sustainable_governance".
+        task_id: One of the registered task IDs.
         trajectory: List of observation metadata dicts (one per step).
 
     Raises:
@@ -271,3 +349,4 @@ def grade_trajectory(task_id: str, trajectory: List[Dict]) -> float:
 def get_task_ids() -> List[str]:
     """Return all available task IDs."""
     return list(TASK_CONFIGS.keys())
+

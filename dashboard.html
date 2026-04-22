@@ -2,19 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OpenENV — Governance Simulation Control</title>
+<title>POLARIS v3 — AI Governance Engine</title>
 <link rel="stylesheet" href="/static/style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="logo">OPENENV <span>CONTROL</span></div>
+  <div class="logo">POLARIS <span>v3</span></div>
   <div class="divider"></div>
   <div class="pill"><span class="k">Step</span><span class="v" id="v-step">0</span></div>
   <div class="pill ok"><span class="k">Stability</span><span class="v" id="v-stab">100%</span></div>
   <div class="pill"><span class="k">Reward</span><span class="v" id="v-rew">0.000</span></div>
   <div class="pill"><span class="k">Trust</span><span class="v" id="v-trust">0.600</span></div>
+  <div class="pill"><span class="k">ToM</span><span class="v" id="v-tom">--</span></div>
   <div class="divider"></div>
   <div class="chaos-ctl">
     <label>Chaos</label>
@@ -31,9 +32,12 @@
     <button class="btn go" id="btn-go" onclick="go()">RUN</button>
     <button class="btn" id="btn-pause" onclick="pause()">PAUSE</button>
     <button class="btn stop" onclick="reset()">RESET</button>
-    <select class="btn" id="sel-reg" onchange="regime(this.value)">
-      <option value="calibrated">CALIBRATED</option>
-      <option value="extreme">EXTREME</option>
+    <select class="btn" id="sel-task" onchange="regime(this.value)">
+      <option value="environmental_recovery">EASY</option>
+      <option value="balanced_economy">MEDIUM</option>
+      <option value="sustainable_governance">HARD</option>
+      <option value="negotiation_arena" selected>NEGOTIATION</option>
+      <option value="multi_agent_council">EXTREME</option>
     </select>
     <input type="number" class="seed-box" id="seed" value="42" min="0" max="9999" title="Seed">
   </div>
@@ -41,11 +45,12 @@
 
 <div class="tabs">
   <div class="tab on" data-p="live" onclick="tab('live')">Live <span class="n">1</span></div>
-  <div class="tab" data-p="war" onclick="tab('war')">War Room <span class="n">2</span></div>
-  <div class="tab" data-p="causal" onclick="tab('causal')">Causal <span class="n">3</span></div>
-  <div class="tab" data-p="metrics" onclick="tab('metrics')">Metrics <span class="n">4</span></div>
-  <div class="tab" data-p="risk" onclick="tab('risk')">Risk <span class="n">5</span></div>
-  <div class="tab" data-p="hist" onclick="tab('hist')">History <span class="n">6</span></div>
+  <div class="tab" data-p="neg" onclick="tab('neg')">Negotiation <span class="n badge-neg">2</span></div>
+  <div class="tab" data-p="war" onclick="tab('war')">War Room <span class="n">3</span></div>
+  <div class="tab" data-p="causal" onclick="tab('causal')">Causal <span class="n">4</span></div>
+  <div class="tab" data-p="metrics" onclick="tab('metrics')">Metrics <span class="n">5</span></div>
+  <div class="tab" data-p="risk" onclick="tab('risk')">Risk <span class="n">6</span></div>
+  <div class="tab" data-p="hist" onclick="tab('hist')">History <span class="n">7</span></div>
 </div>
 
 <div class="viewport">
@@ -54,6 +59,60 @@
     <div class="card"><div class="card-h"><span class="live"></span>GDP INDEX</div><div class="card-body"><canvas id="c-gdp"></canvas></div></div>
     <div class="card"><div class="card-h"><span class="live"></span>POLLUTION INDEX</div><div class="card-body"><canvas id="c-pol"></canvas></div></div>
     <div class="card"><div class="card-h"><span class="live"></span>REWARD / TRUST</div><div class="card-body"><canvas id="c-rt"></canvas></div></div>
+  </div>
+
+  <!-- v3: NEGOTIATION TAB -->
+  <div class="pane" id="p-neg">
+    <div class="card neg-ministers">
+      <div class="card-h">MINISTER PROPOSALS</div>
+      <div class="card-body">
+        <div class="minister-list" id="minister-proposals">
+          <div class="neg-empty">Run a negotiation task to see minister proposals</div>
+        </div>
+      </div>
+    </div>
+    <div class="card neg-agent">
+      <div class="card-h"><span class="live"></span>AGENT DECISION</div>
+      <div class="card-body">
+        <div class="agent-decision" id="agent-decision">
+          <div class="neg-empty">Awaiting agent response...</div>
+        </div>
+      </div>
+    </div>
+    <div class="card neg-outcome">
+      <div class="card-h">VOTE OUTCOME</div>
+      <div class="card-body">
+        <div class="vote-result" id="vote-result">
+          <div class="neg-empty">No vote yet</div>
+        </div>
+      </div>
+    </div>
+    <div class="card neg-briefings">
+      <div class="card-h">INTELLIGENCE BRIEFINGS</div>
+      <div class="card-body">
+        <div class="briefing-feed" id="briefing-feed">
+          <div class="neg-empty">No briefings yet</div>
+        </div>
+      </div>
+    </div>
+    <div class="card neg-tom">
+      <div class="card-h">THEORY OF MIND</div>
+      <div class="card-body">
+        <div class="tom-stats">
+          <div class="tom-kpi"><div class="tom-val" id="tom-accuracy">--</div><div class="tom-lbl">Veto Prediction Accuracy</div></div>
+          <div class="tom-kpi"><div class="tom-val" id="tom-coalitions">0</div><div class="tom-lbl">Coalitions Formed</div></div>
+          <div class="tom-kpi"><div class="tom-val" id="tom-vetoes">0</div><div class="tom-lbl">Vetoes Received</div></div>
+          <div class="tom-kpi"><div class="tom-val" id="tom-reward">0.00</div><div class="tom-lbl">ToM Reward Total</div></div>
+        </div>
+        <canvas id="c-tom" style="margin-top:10px"></canvas>
+      </div>
+    </div>
+    <div class="card neg-timeline">
+      <div class="card-h">NEGOTIATION FEED</div>
+      <div class="card-body">
+        <div class="neg-feed" id="neg-feed"></div>
+      </div>
+    </div>
   </div>
 
   <div class="pane" id="p-war">
@@ -94,17 +153,17 @@
       <div class="scrubber"><span id="sc-lo">0</span><input type="range" id="sc-r" min="0" max="0" value="0" oninput="scrub(this.value)"><span id="sc-hi">0</span><button class="btn" onclick="exp()">EXPORT</button></div>
     </div>
     <div class="card" style="grid-column:1/-1;overflow-y:auto">
-      <table><thead><tr><th>Time</th><th>Seed</th><th>Regime</th><th>Chaos</th><th>Steps</th><th>Score</th><th>Outcome</th></tr></thead><tbody id="eptb"></tbody></table>
+      <table><thead><tr><th>Time</th><th>Seed</th><th>Task</th><th>Chaos</th><th>Steps</th><th>Score</th><th>Outcome</th></tr></thead><tbody id="eptb"></tbody></table>
     </div>
   </div>
 </div>
 
 <div class="bottom">
-  <span>Regime: <span class="v" id="b-reg">CALIBRATED</span></span>
+  <span>Task: <span class="v" id="b-reg">NEGOTIATION</span></span>
   <span>Coalitions: <span class="v" id="b-coal">0</span></span>
   <span>Vetoes: <span class="v" id="b-veto">0</span></span>
   <span>Betrayals: <span class="v" id="b-bet">0</span></span>
-  <span>Avg Influence: <span class="v" id="b-inf">--</span></span>
+  <span>ToM Score: <span class="v" id="b-tom">--</span></span>
   <span>Events: <span class="v" id="b-evt">0</span></span>
   <div class="dot dn" id="wsd"></div>
   <span id="wsl">OFFLINE</span>

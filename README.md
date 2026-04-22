@@ -1,143 +1,351 @@
+<div align="center">
+
+# 🌐 POLARIS v3 — Multi-Agent AI Governance Engine
+
+### *An OpenEnv Environment for Training LLMs on Multi-Agent Negotiation, Theory-of-Mind, and Long-Horizon Planning*
+
+[![OpenEnv](https://img.shields.io/badge/OpenEnv-Compatible-4f46e5?style=for-the-badge)](https://github.com/OpenEnv-ai/openenv)
+[![HF Space](https://img.shields.io/badge/🤗-HuggingFace_Space-yellow?style=for-the-badge)](https://huggingface.co/spaces/asabhishek/polaris-v3)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+
+**Built by [Abhishek A S](https://github.com/abhishekascodes) — Solo, Age 17**
+
 ---
-title: POLARIS v2 — AI Governance Engine
-emoji: 🌟
-colorFrom: indigo
-colorTo: green
-sdk: docker
-pinned: true
-license: mit
-tags:
-  - openenv
-  - reinforcement-learning
-  - multi-agent
-  - policy-optimization
-  - pytorch
+
+*POLARIS simulates a 21-metric economic nation where an LLM agent must negotiate with 5 AI minister personas, predict vetoes, form coalitions, and act on time-sensitive intelligence briefings. It is the first OpenEnv environment to put LLM agents inside the environment itself, creating genuine multi-agent interaction that trains theory-of-mind reasoning.*
+
+</div>
+
 ---
 
-# 🌟 POLARIS v2 — Multi-Agent AI Governance Engine
+## 📋 Table of Contents
 
-> *"What happens when 5 AI ministers negotiate the fate of a nation under cascading crises — and the environment fights back?"*
+- [Why POLARIS?](#-why-polaris)
+- [Architecture](#-architecture)
+- [Themes Covered](#-themes-covered)
+- [Tasks](#-tasks)
+- [How It Works](#-how-it-works)
+- [Negotiation Protocol](#-negotiation-protocol)
+- [Reward System](#-reward-system)
+- [Training Results](#-training-results)
+- [Quick Start](#-quick-start)
+- [Project Structure](#-project-structure)
+- [Links](#-links)
 
-A research-grade, multi-objective, multi-agent governance simulation for training LLM policy agents. Built for the **Meta PyTorch × OpenEnv Hackathon Grand Finale**.
+---
 
-**Covers 3 Themes:** Multi-Agent Interactions • Long-Horizon Planning • Self-Improvement
+## 🎯 Why POLARIS?
 
-## 🏆 Results at a Glance
+Most RL environments treat the agent as the *only* intelligent entity. The "environment" is just physics or rules. **POLARIS is different.**
 
-| Metric | Value |
-|--------|-------|
-| TRL GRPO Training | **+19.8% reward improvement** |
-| Survival Rate | **0% → 40%** after 500 GRPO steps |
-| Llama 3.3 70B Benchmark | **0.96 score** on Easy, collapses on Hard |
-| Stress Test | **129/132 passed** (1,500 episodes, 97.7%) |
-| Curriculum Escalation | Easy 3/3 → Medium 2/3 → Hard 0/3 |
+In POLARIS, the environment contains **5 AI minister agents** that:
+- 🗣️ Generate natural language proposals with arguments
+- 🤝 Offer coalitions with conditions
+- ⚡ Threaten and execute vetoes based on their priorities
+- 🕵️ Have hidden agendas the training agent must discover
+- 📋 Deliver time-sensitive intelligence briefings with deadlines
 
-## 🧠 Architecture
+The training agent doesn't just pick actions — it must **read proposals, reason about other agents' motivations, predict their behavior, and negotiate strategically**. This creates genuine theory-of-mind pressure that no grid-world or simple game can match.
+
+### What makes this research-grade?
+
+| Feature | Typical OpenEnv | POLARIS v3 |
+|---------|----------------|------------|
+| Agents in environment | 0 (just rules) | **5 LLM-powered ministers** |
+| Action space | Simple string | **Structured JSON** (action + reasoning + coalition + veto prediction) |
+| Observation | Flat metrics | **Natural language negotiation context** + 55-dim vector |
+| Reward signal | Single scalar | **Composite**: governance + theory-of-mind + briefing compliance |
+| Memory test | None | **Timed briefings with deadlines across 200+ steps** |
+| Difficulty | Fixed | **Auto-curriculum escalation** |
+
+---
+
+## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────┐
-│              POLARIS v2 ENGINE              │
-├─────────────┬───────────┬───────────────────┤
-│ Transition  │  Event    │  Multi-Agent      │
-│ Engine      │  Engine   │  Council (5)      │
-│ 21 metrics  │ Cascading │ Coalitions/Vetoes │
-├─────────────┼───────────┼───────────────────┤
-│ Reward      │ Explain-  │  Curriculum       │
-│ Engine      │ ability   │  Engine           │
-│ Multi-obj   │ Causal    │  Auto-difficulty  │
-├─────────────┴───────────┴───────────────────┤
-│        19 Actions × 4 Difficulty Tiers      │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    POLARIS v3 Engine                         │
+├──────────────┬──────────────┬───────────────┬───────────────┤
+│  Transition  │    Event     │     Drift     │  Explainability│
+│  Engine (L4) │  Engine (v2) │   Engine      │   Engine       │
+│  ─ 4 layers  │  ─ sigmoid   │  ─ 6 vars     │  ─ causal      │
+│  ─ delayed   │  ─ chaining  │  ─ non-       │  ─ counter-    │
+│    effects   │  ─ memory    │    stationary │    factuals    │
+├──────────────┴──────────────┴───────────────┴───────────────┤
+│              Multi-Agent Council (5 Ministers)                │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────┐ ┌───────┐ │
+│  │Chancellor│ │Director  │ │   Dr.    │ │Gen.  │ │Senator│ │
+│  │  Voss    │ │ Okafor   │ │ Vasquez  │ │Tanaka│ │Mwangi │ │
+│  │ Finance  │ │Environ.  │ │ Health   │ │Industry│ │Social│ │
+│  │  💰      │ │  🌿      │ │  🏥      │ │  🏭   │ │ 🗳️  │ │
+│  └──────────┘ └──────────┘ └──────────┘ └──────┘ └───────┘ │
+├─────────────────────────────────────────────────────────────┤
+│              Negotiation Protocol (3-Phase)                  │
+│  PROPOSE → ministers generate proposals with arguments       │
+│  NEGOTIATE → agent reads, reasons, forms coalitions          │
+│  RESOLVE → council votes, vetoes, outcomes computed          │
+├─────────────────────────────────────────────────────────────┤
+│              Briefing Engine (Long-Horizon Memory)            │
+│  Time-sensitive intelligence with deadlines                  │
+│  "GDP must exceed 95 by step 45 or investors withdraw"       │
+├─────────────────────────────────────────────────────────────┤
+│              Reward Engine                                    │
+│  Governance reward + Theory-of-Mind reward + Briefing reward │
+│  Pareto optimality + Cooperation bonus + Oscillation penalty │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## 🔑 Key Features
+---
 
-- **Multi-Agent Council**: 5 ministers (Economy, Environment, Social, Infrastructure, Finance) negotiate, form coalitions, veto proposals, betray alliances
-- **Institutional Trust**: Slow-moving global state affected by cooperation patterns
-- **Causal Explainability**: Every step produces causal chains, counterfactuals, and natural language narratives
-- **Non-Stationary Dynamics**: Regime shifts + random events (pandemics, trade wars, disasters)
-- **Auto-Curriculum**: Environment escalates difficulty as agent improves (Theme #4)
-- **19 Policy Actions**: 16 core policy levers + 3 meta-coordination actions
-- **4 Difficulty Tiers**: Easy → Medium → Hard → Extreme (structural instability)
+## 🎪 Themes Covered
+
+### Theme #1: Multi-Agent Interactions ✅
+- 5 minister agents with distinct personas, priorities, and hidden agendas
+- Natural language negotiation with proposals, arguments, and coalition offers
+- Veto mechanics that create real strategic tension
+- Theory-of-mind scoring: agent is rewarded for correctly predicting vetoes
+
+### Theme #2: Long-Horizon Planning ✅
+- Episodes up to 300 steps with sparse delayed rewards
+- Diplomatic briefings with deadlines: "Reduce pollution below 120 by step 45"
+- The agent must remember briefings and plan across the full episode
+- Briefing compliance is scored and rewarded
+
+### Theme #3: World Modeling ✅
+- 21-metric economic simulation with cross-layer feedback
+- 4-layer transition engine with delayed policy effects
+- Non-stationary drift on 6 variables (the world changes under you)
+- Causal reasoning chain in every observation
+
+### Theme #4: Self-Improvement ✅
+- Auto-curriculum: difficulty escalates as the agent improves
+- Chaos level increases from 0.0 → 1.0 across training
+- Event frequency scales up
+- The environment *adapts* to the agent's capability
+
+---
+
+## 📝 Tasks
+
+| Task | Steps | Ministers | Difficulty | Negotiation | Briefings |
+|------|-------|----------|------------|-------------|-----------|
+| `environmental_recovery` | 50 | 1 | Easy | ❌ | ❌ |
+| `balanced_economy` | 100 | 1 | Medium | ❌ | ❌ |
+| `sustainable_governance` | 200 | 3 | Hard | ✅ | ✅ |
+| `sustainable_governance_extreme` | 200 | 5 | Extreme | ✅ | ✅ |
+| `multi_agent_council` | 300 | 5 | Extreme+ | ✅ | ✅ |
+| `negotiation_arena` | 200 | 5 | Hard | ✅ | ✅ |
+
+---
+
+## 🔬 How It Works
+
+### Step-by-Step Flow
+
+```
+1. Agent receives observation:
+   - 21 economic metrics (GDP, pollution, satisfaction, etc.)
+   - Minister proposals with arguments and veto threats
+   - Active briefings with deadlines
+   - Coalition offers from ministers
+
+2. Agent outputs structured decision:
+   {
+     "action": "subsidize_renewables",
+     "reasoning": "Pollution at 130 threatens ecological collapse",
+     "coalition_target": ["Director Okafor", "Dr. Vasquez"],
+     "veto_prediction": ["Chancellor Voss"],
+     "stance": "cooperative"
+   }
+
+3. Environment resolves:
+   - Council votes on the action
+   - Coalitions form or fail
+   - Vetoes execute (or don't)
+   - Theory-of-mind accuracy scored
+   - World state updates through 4-layer transition
+
+4. Reward computed:
+   = governance_reward      (did metrics improve?)
+   + tom_reward             (was veto prediction correct?)
+   + briefing_reward        (did agent act on briefings?)
+   + cooperation_bonus      (did coalition form?)
+   - oscillation_penalty    (did agent flip-flop?)
+```
+
+---
+
+## 🤝 Negotiation Protocol
+
+Each step runs a 3-phase negotiation:
+
+### Phase 1: PROPOSE
+Ministers generate proposals based on their priorities:
+```
+💰 Chancellor Voss (Finance):
+  Proposes: decrease_tax
+  "GDP is at 90. We need economic stimulus now."
+  Coalition offer: "I'll support you if Industry joins."
+  Trust: 47%
+  Intel: Voss reacted strongly to carbon tax.
+
+🌿 Director Okafor (Environment):
+  Proposes: subsidize_renewables
+  "Pollution at 130 threatens ecological stability."
+  Veto threat: NO
+  Trust: 69%
+```
+
+### Phase 2: NEGOTIATE
+The training agent reads all proposals and decides:
+- Which action to take
+- Which ministers to ally with
+- Which ministers might veto
+- What argument to make
+
+### Phase 3: RESOLVE
+The council votes:
+- **Supporters** rally behind the agent's action
+- **Opposers** vote against
+- **Vetoes** can override the decision entirely
+- **Coalition formation** is tracked for cooperation scoring
+
+---
+
+## 💰 Reward System
+
+POLARIS uses a **composite reward function** with 6 components:
+
+| Component | Weight | Signal |
+|-----------|--------|--------|
+| Base Governance | ~40% | Multi-metric improvement (GDP, pollution, satisfaction) |
+| Pareto Optimality | ~15% | Balanced improvement across all dimensions |
+| Theory-of-Mind | ~15% | Correct veto predictions (+0.15), wrong (-0.05) |
+| Cooperation | ~10% | Coalition formation bonus (+0.08) |
+| Briefing Compliance | ~10% | Acting on timed intelligence before deadline |
+| Oscillation Penalty | ~10% | Penalizes flip-flopping between opposite actions |
+
+This reward is **dense** (every step), **multi-dimensional** (6 components), and **hard to game** (improving one metric while tanking others gets penalized by Pareto scoring).
+
+---
+
+## 📊 Training Results
+
+Training was performed using HuggingFace TRL's GRPO algorithm:
+
+```
+Model: gpt2 (124M parameters)
+Task: negotiation_arena (5 ministers, 200 steps)
+Training: 50 GRPO steps
+Hardware: NVIDIA RTX 5080 (16GB)
+```
+
+### Before vs After Training
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Avg Episode Reward | — | — | — |
+| Survival Rate | —/5 | —/5 | — |
+| Veto Prediction Accuracy | — | — | — |
+| Coalition Formation | — | — | — |
+
+> **Note**: Full training will be performed onsite on 25-26 April using hackathon compute credits. The training pipeline is fully validated and ready.
+
+### Self-Improvement Curriculum
+
+The agent is evaluated on escalating difficulty:
+
+| Level | Chaos | Avg Reward | Survival | ToM Accuracy |
+|-------|-------|-----------|----------|-------------|
+| Easy | 0.0 | — | —/3 | — |
+| Medium | 0.3 | — | —/3 | — |
+| Hard | 0.6 | — | —/3 | — |
+| Extreme | 1.0 | — | —/3 | — |
+
+---
 
 ## 🚀 Quick Start
 
+### Install Dependencies
+
 ```bash
-# Run the environment server
-python -m uvicorn server.app:app --port 7860
-
-# Live research dashboard
-python dashboard_server.py
-
-# Train with TRL GRPO
-python train_trl.py --steps 500 --model gpt2
-
-# Benchmark with Llama 70B (Groq)
-GROQ_API_KEY=gsk_... python llm_benchmark.py
-
-# Full validation (1,500 episodes)
-python nuclear_test.py
+pip install -r requirements.txt
 ```
 
-## 📊 API Endpoints
+### Run the Environment
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check |
-| `/reset` | POST | Start new episode |
-| `/step` | POST | Take an action |
-| `/state` | GET | Current state |
-| `/tasks` | GET | List available tasks |
-| `/schema` | GET | Action/observation schemas |
+```bash
+# Start the server
+cd openenv && python -m uvicorn server.app:app --host 0.0.0.0 --port 7860
 
-## 🎯 Tasks
+# Run inference
+export API_BASE_URL="https://api.groq.com/openai/v1"
+export MODEL_NAME="llama-3.3-70b-versatile"
+export HF_TOKEN="your_key"
+python inference.py
+```
 
-| Task | Difficulty | Steps | Description |
-|------|-----------|-------|-------------|
-| `environmental_recovery` | Easy | 50 | Reduce pollution while maintaining GDP |
-| `balanced_economy` | Medium | 100 | Balance GDP, pollution, and satisfaction |
-| `sustainable_governance` | Hard | 200 | Long-horizon stability under event pressure |
-| `sustainable_governance_extreme` | Extreme | 200 | Structural instability benchmark |
+### Train with TRL
 
-## 📈 Training Pipeline
+```bash
+python train_trl.py --model gpt2 --steps 200 --episodes 30
+python train_trl.py --plot  # Generate result plots
+```
 
-Uses **HuggingFace TRL GRPOTrainer** with GPU optimizations:
-- `torch.backends.cudnn.benchmark = True`
-- `torch.backends.cuda.matmul.allow_tf32 = True`
-- bf16 mixed precision on CUDA devices
-- Auto-curriculum self-improvement evaluation
+### View Dashboard
 
-## 🔬 Validation
+Open `http://localhost:7860` in your browser to see the real-time negotiation dashboard.
 
-- **132 automated tests** covering determinism, reward bounds, collapse detection, spec compliance
-- **1,500-episode statistical analysis** (95 episodes/sec throughput)
-- **Llama 3.3 70B live benchmark** via Groq API
-- **6-baseline comparison** (random, heuristic, greedy, LLM proxy, single RL, multi-council)
+---
 
 ## 📁 Project Structure
 
 ```
-polaris-v2/
+openenv/
 ├── server/
-│   ├── app.py                 # FastAPI server
-│   ├── policy_environment.py  # Core environment
-│   ├── transition_engine.py   # 21-metric state transitions
-│   ├── event_engine.py        # Cascading stochastic events
-│   ├── reward_engine.py       # Multi-objective rewards
-│   ├── multi_agent_council.py # 5-minister council
-│   ├── explainability.py      # Causal chains + counterfactuals
-│   ├── curriculum_engine.py   # Auto-difficulty escalation
-│   ├── drift_engine.py        # Non-stationary dynamics
-│   ├── config.py              # 19 actions, task configs
-│   └── tasks.py               # Grading system
-├── train_trl.py               # TRL GRPO training (GPU)
-├── llm_benchmark.py           # Live LLM benchmark (Groq)
-├── inference.py               # OpenAI-compatible agent
-├── dashboard_server.py        # 6-tab research dashboard
-├── nuclear_test.py            # 132-test validation suite
-├── openenv.yaml               # OpenEnv spec
-├── Dockerfile                 # HF Spaces deployment
-└── README.md
+│   ├── policy_environment.py   # Core environment (v3 POLARIS)
+│   ├── llm_minister.py         # 5 LLM-powered minister personas
+│   ├── negotiation_protocol.py # 3-phase negotiation with ToM scoring
+│   ├── briefing_engine.py      # Time-sensitive intelligence briefings
+│   ├── transition_engine.py    # 4-layer state transitions
+│   ├── event_engine.py         # Sigmoid probability events with chaining
+│   ├── drift_engine.py         # Non-stationary variable drift
+│   ├── multi_agent_council.py  # Coalition/voting mechanics
+│   ├── reward_engine.py        # Composite reward function
+│   ├── explainability.py       # Causal chains + counterfactuals
+│   ├── config.py               # 6 task configurations
+│   ├── tasks.py                # Deterministic graders
+│   └── app.py                  # FastAPI server
+├── static/
+│   ├── style.css               # Dashboard styling
+│   └── app.js                  # Dashboard engine
+├── dashboard.html              # Real-time negotiation dashboard
+├── inference.py                # LLM inference with structured output
+├── train_trl.py                # TRL GRPO training pipeline
+├── openenv.yaml                # OpenEnv manifest
+├── requirements.txt            # Dependencies
+├── Dockerfile                  # Container deployment
+└── README.md                   # This file
 ```
 
-Built by **Abhishek A S** — Meta PyTorch × OpenEnv Hackathon Grand Finale 2026
+---
+
+## 🔗 Links
+
+| Resource | Link |
+|----------|------|
+| 🤗 HuggingFace Space | [huggingface.co/spaces/asabhishek/polaris-v3](https://huggingface.co/spaces/asabhishek/polaris-v3) |
+| 📦 GitHub Repository | [github.com/abhishekascodes/POLARIS-V3](https://github.com/abhishekascodes/POLARIS-V3) |
+| 📝 HuggingFace Blog | *Coming soon* |
+| 🎥 Demo Video | *Coming soon* |
+
+---
+
+<div align="center">
+
+**Built with 🧠 for the Meta PyTorch OpenEnv Hackathon × Scaler 2026**
+
+*POLARIS: Where every policy decision is a negotiation, every minister has an agenda, and every veto tests your theory of mind.*
+
+</div>

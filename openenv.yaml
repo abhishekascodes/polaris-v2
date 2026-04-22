@@ -1,5 +1,5 @@
 spec_version: 1
-name: polaris_v2
+name: polaris_v3
 type: space
 runtime: fastapi
 entrypoint: server.app:app
@@ -27,9 +27,19 @@ tasks:
     max_steps: 200
     difficulty: extreme
 
+  - id: multi_agent_council
+    description: "Multi-Agent Council (Extreme+): 5 AI ministers negotiate through natural language. Agent must form coalitions, predict vetoes, and act on diplomatic briefings."
+    max_steps: 300
+    difficulty: extreme
+
+  - id: negotiation_arena
+    description: "Negotiation Arena: Full multi-agent negotiation with theory-of-mind scoring. Agent reads minister proposals, forms coalitions, predicts vetoes, responds to intelligence briefings."
+    max_steps: 200
+    difficulty: hard
+
 action_space:
-  type: discrete
-  count: 16
+  type: structured
+  count: 19
   schema: models.PolicyAction
 
 observation_schema: models.PolicyObservationSchema
