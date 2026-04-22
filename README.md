@@ -1,3 +1,20 @@
+---
+title: POLARIS v3
+emoji: 🌐
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+pinned: true
+license: mit
+short_description: Multi-Agent AI Governance Engine with Theory-of-Mind
+tags:
+  - openenv
+  - reinforcement-learning
+  - multi-agent
+  - theory-of-mind
+  - negotiation
+  - governance
+---
 <div align="center">
 
 # 🌐 POLARIS v3 — Multi-Agent AI Governance Engine
