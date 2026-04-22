@@ -166,46 +166,76 @@ def generate_dataset(tokenizer, num_episodes=25, max_steps=50, seed=42, task_id=
     return Dataset.from_dict({"prompt": unique})
 
 
-# ── Reward Function ──
-def make_reward_func(task_id="negotiation_arena"):
-    """Create a GRPO reward function that evaluates actions in the environment."""
+# ── Reward Function with Curriculum ToM ──
+_step_counter = {"n": 0}  # Track global steps for curriculum weighting
+
+def make_reward_func(task_id="negotiation_arena", total_steps=100):
+    """Create a GRPO reward function with curriculum-weighted ToM.
+    
+    Phase 1 (first 40%): Heavy ToM weight to teach veto prediction behavior
+    Phase 2 (40-70%):    Balanced ToM + governance
+    Phase 3 (last 30%):  Governance-dominant with stable ToM
+    """
     def reward_func(completions, **kwargs):
         prompts = kwargs.get("prompts", kwargs.get("prompt", [""] * len(completions)))
         if isinstance(prompts, str): prompts = [prompts] * len(completions)
+        _step_counter["n"] += 1
+        progress = min(_step_counter["n"] / max(total_steps, 1), 1.0)
+        
+        # Curriculum weights
+        if progress < 0.4:    # Phase 1: Teach ToM
+            w_gov, w_tom, w_format = 0.4, 5.0, 0.3
+        elif progress < 0.7:  # Phase 2: Balance
+            w_gov, w_tom, w_format = 0.7, 3.0, 0.2
+        else:                 # Phase 3: Stabilize
+            w_gov, w_tom, w_format = 1.0, 2.0, 0.1
+        
         rewards = []
         for i, completion in enumerate(completions):
             action_data = parse_action_from_text(completion)
             action = action_data["action"]
+            
+            # Separate reward channels
+            r_gov, r_tom, r_format = 0.0, 0.0, 0.0
+            
             try:
                 env = PolicyEnvironment()
                 seed = abs(hash(prompts[i] if i < len(prompts) else "")) % 10000
                 obs = env.reset(seed=seed, task_id=task_id)
-                # Advance a few steps
                 for _ in range(min(3, random.randint(1, 5))):
                     if obs.done: break
                     obs = env.step({"action": "no_action"})
                 if not obs.done:
                     obs = env.step(action_data)
-                    r = float(obs.reward)
-                    # ToM bonus
-                    tom_r = obs.metadata.get("negotiation_outcome", {}).get("tom_reward", 0)
-                    r += tom_r * 2.0
-                    # Coalition bonus
-                    if obs.metadata.get("negotiation_outcome", {}).get("coalition_formed"):
-                        r += 0.15
+                    r_gov = float(obs.reward)
+                    
+                    # ToM channel
+                    outcome = obs.metadata.get("negotiation_outcome", {})
+                    tom_r = outcome.get("tom_reward", 0)
+                    r_tom += tom_r
+                    if outcome.get("veto_prediction_correct"):
+                        r_tom += 0.5
+                    # Reward attempting veto predictions (sparse → dense)
+                    if action_data.get("veto_prediction"):
+                        r_tom += 0.15
+                    # Coalition bonus (part of governance)
+                    if outcome.get("coalition_formed"):
+                        r_gov += 0.15
                 else:
-                    r = -0.1
+                    r_gov = -0.1
             except Exception:
-                r = -0.2
+                r_gov = -0.2
             
-            # Format bonus: reward valid JSON
-            if action != "no_action": r += 0.1
+            # Format channel
+            if action != "no_action": r_format += 0.1
             try:
                 import re
-                if re.search(r'\{[^}]+\}', completion): r += 0.05
+                if re.search(r'\{[^}]+\}', completion): r_format += 0.05
             except: pass
             
-            rewards.append(float(r))
+            # Weighted combination
+            total = (r_gov * w_gov) + (r_tom * w_tom) + (r_format * w_format)
+            rewards.append(float(total))
         return rewards
     return reward_func
 
@@ -475,7 +505,7 @@ def main():
     trainer = GRPOTrainer(
         model=model, args=training_args,
         train_dataset=dataset,
-        reward_funcs=make_reward_func(args.task),
+        reward_funcs=make_reward_func(args.task, total_steps=args.steps),
         processing_class=tokenizer,
     )
     
