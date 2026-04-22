@@ -4,274 +4,212 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>POLARIS v3 — Multi-Agent AI Governance Engine</title>
-<meta name="description" content="Research-grade RL environment for training LLMs on multi-agent negotiation, theory-of-mind, and long-horizon governance.">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0a0a0f;--surface:#12121a;--card:#1a1a2e;--border:#2a2a3e;
-  --text:#e4e4ef;--muted:#8888a0;--accent:#6366f1;--accent2:#818cf8;
-  --green:#10b981;--red:#ef4444;--amber:#f59e0b;--purple:#a855f7;
-  --gradient:linear-gradient(135deg,#6366f1,#a855f7,#ec4899);
-}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.6}
-.hero{position:relative;padding:60px 20px 40px;text-align:center;overflow:hidden}
-.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 50%,rgba(99,102,241,0.08),transparent 50%),radial-gradient(circle at 70% 50%,rgba(168,85,247,0.06),transparent 50%);animation:pulse 8s ease-in-out infinite alternate}
-@keyframes pulse{0%{opacity:0.5;transform:scale(1)}100%{opacity:1;transform:scale(1.05)}}
-.hero h1{font-size:3.2rem;font-weight:900;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;position:relative}
-.hero .version{display:inline-block;background:var(--gradient);color:#fff;padding:4px 14px;border-radius:20px;font-size:0.75rem;font-weight:700;letter-spacing:1px;margin-bottom:16px}
-.hero p{color:var(--muted);font-size:1.1rem;max-width:700px;margin:0 auto}
-.hero .author{margin-top:16px;font-size:0.9rem;color:var(--accent2)}
+:root{--bg:#fafaf9;--surface:#fff;--text:#1c1917;--muted:#78716c;--border:#e7e5e4;--accent:#2563eb;--accent-light:#dbeafe;--green:#16a34a;--green-bg:#dcfce7;--red:#dc2626;--red-bg:#fee2e2;--amber:#d97706;--amber-bg:#fef3c7;--purple:#7c3aed;--purple-bg:#ede9fe}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
 
-.stats-row{display:flex;justify-content:center;gap:24px;padding:20px;flex-wrap:wrap;max-width:1100px;margin:0 auto}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px 32px;text-align:center;min-width:180px;position:relative;overflow:hidden;transition:transform 0.3s,box-shadow 0.3s}
-.stat-card:hover{transform:translateY(-4px);box-shadow:0 8px 30px rgba(99,102,241,0.15)}
-.stat-card .num{font-size:2.4rem;font-weight:800;margin-bottom:4px}
-.stat-card .label{font-size:0.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
-.stat-card.green .num{color:var(--green)}
-.stat-card.purple .num{color:var(--purple)}
-.stat-card.amber .num{color:var(--amber)}
-.stat-card.accent .num{color:var(--accent)}
-.stat-card.red .num{color:var(--red)}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:32px 0}
+.wrap{max-width:1080px;margin:0 auto;padding:0 32px}
+.header h1{font-size:1.75rem;font-weight:800;letter-spacing:-0.03em;color:var(--text)}
+.header h1 span{color:var(--accent)}
+.header .sub{font-size:0.95rem;color:var(--muted);margin-top:4px;font-weight:400;max-width:640px}
+.header .meta{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:6px;font-size:0.75rem;font-weight:600;border:1px solid var(--border);background:var(--surface)}
+.tag.blue{background:var(--accent-light);border-color:#bfdbfe;color:var(--accent)}
+.nav{display:flex;gap:12px;margin-top:16px}
+.nav a{font-size:0.8rem;font-weight:600;color:var(--accent);text-decoration:none;padding:6px 14px;border-radius:6px;border:1px solid var(--accent);transition:all 0.2s}
+.nav a:hover{background:var(--accent);color:#fff}
+.nav a.fill{background:var(--accent);color:#fff}
 
-.container{max-width:1200px;margin:0 auto;padding:0 20px}
-.section{padding:40px 0}
-.section-title{font-size:1.6rem;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:10px}
-.section-title span{font-size:1.4rem}
+.kpi{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:32px 0}
+.kpi-item{background:var(--surface);padding:20px 16px;text-align:center}
+.kpi-item .val{font-size:1.6rem;font-weight:800;letter-spacing:-0.02em}
+.kpi-item .lbl{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;font-weight:500}
+.kpi-item.green .val{color:var(--green)}
+.kpi-item.red .val{color:var(--red)}
+.kpi-item.accent .val{color:var(--accent)}
 
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
-@media(max-width:768px){.grid-2,.grid-3{grid-template-columns:1fr}}
+section{padding:40px 0}
+section+section{border-top:1px solid var(--border)}
+.sec-title{font-size:1.15rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.sec-title .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
 
-.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;transition:transform 0.2s}
-.card:hover{transform:translateY(-2px)}
-.card h3{font-size:1.1rem;font-weight:700;margin-bottom:16px;color:var(--accent2)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:768px){.grid,.kpi{grid-template-columns:1fr}}
 
-.bar-chart{display:flex;flex-direction:column;gap:12px}
-.bar-row{display:flex;align-items:center;gap:12px}
-.bar-label{width:90px;font-size:0.8rem;color:var(--muted);text-align:right;flex-shrink:0}
-.bar-track{flex:1;height:32px;background:rgba(255,255,255,0.05);border-radius:8px;overflow:hidden;position:relative}
-.bar-fill{height:100%;border-radius:8px;transition:width 1.5s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-size:0.75rem;font-weight:700}
-.bar-fill.before{background:linear-gradient(90deg,#4a4a5e,#6a6a7e)}
-.bar-fill.after{background:linear-gradient(90deg,#4f46e5,#7c3aed)}
-.bar-fill.easy{background:linear-gradient(90deg,#059669,#10b981)}
-.bar-fill.medium{background:linear-gradient(90deg,#d97706,#f59e0b)}
-.bar-fill.hard{background:linear-gradient(90deg,#dc2626,#ef4444)}
-.bar-fill.extreme{background:linear-gradient(90deg,#7c3aed,#a855f7)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px}
+.card h3{font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);margin-bottom:16px}
 
-.badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:0.7rem;font-weight:600;letter-spacing:0.5px}
-.badge.survived{background:rgba(16,185,129,0.15);color:var(--green)}
-.badge.collapsed{background:rgba(239,68,68,0.1);color:var(--red)}
+.bar-group{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-lbl{width:70px;font-size:0.78rem;color:var(--muted);text-align:right;flex-shrink:0;font-weight:500}
+.bar-track{flex:1;height:28px;background:#f5f5f4;border-radius:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 10px;font-size:0.72rem;font-weight:700;color:#fff;transition:width 1s ease}
 
-.minister-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-@media(max-width:768px){.minister-grid{grid-template-columns:repeat(2,1fr)}}
-.minister{background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);border-radius:12px;padding:16px;text-align:center}
-.minister .emoji{font-size:2rem;margin-bottom:6px}
-.minister .name{font-size:0.8rem;font-weight:600;color:var(--accent2)}
-.minister .role{font-size:0.7rem;color:var(--muted);margin-top:2px}
+.big-num{text-align:center;padding:16px 0}
+.big-num .n{font-size:2.8rem;font-weight:800;letter-spacing:-0.03em}
+.big-num .arr{font-size:1.2rem;color:var(--muted);margin:4px 0}
+.big-num .sub{font-size:0.85rem;color:var(--muted)}
+.big-num .badge{display:inline-block;margin-top:8px;padding:4px 12px;border-radius:6px;font-size:0.75rem;font-weight:700}
 
-.reward-component{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
-.reward-component:last-child{border-bottom:none}
-.reward-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.reward-name{flex:1;font-size:0.85rem;font-weight:500}
-.reward-weight{font-size:0.8rem;color:var(--muted);font-weight:600}
+table.clean{width:100%;border-collapse:collapse;font-size:0.82rem}
+table.clean th{text-align:left;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-size:0.7rem;padding:8px 12px;border-bottom:2px solid var(--border)}
+table.clean td{padding:10px 12px;border-bottom:1px solid var(--border);font-weight:500}
+table.clean tr:last-child td{border-bottom:none}
 
-.timeline{position:relative;padding-left:30px}
-.timeline::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:2px;background:var(--border)}
-.timeline-item{position:relative;padding:12px 0;padding-left:20px}
-.timeline-item::before{content:'';position:absolute;left:-24px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
-.timeline-item .phase{font-size:0.75rem;color:var(--accent2);font-weight:600;text-transform:uppercase;letter-spacing:1px}
-.timeline-item .desc{font-size:0.85rem;color:var(--muted);margin-top:4px}
+.pill{display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:700}
+.pill.g{background:var(--green-bg);color:var(--green)}
+.pill.r{background:var(--red-bg);color:var(--red)}
+.pill.a{background:var(--amber-bg);color:var(--amber)}
+.pill.p{background:var(--purple-bg);color:var(--purple)}
 
-.footer{text-align:center;padding:40px 20px;color:var(--muted);font-size:0.8rem;border-top:1px solid var(--border)}
-.footer a{color:var(--accent2);text-decoration:none}
+.minister-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px}
+.minister{text-align:center;padding:16px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+.minister .icon{font-size:0.85rem;font-weight:800;width:32px;height:32px;border-radius:50%;background:var(--accent-light);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;margin-bottom:6px}
+.minister .nm{font-size:0.78rem;font-weight:700}
+.minister .rl{font-size:0.68rem;color:var(--muted)}
+@media(max-width:768px){.minister-row{grid-template-columns:repeat(2,1fr)}}
 
-.links{display:flex;gap:16px;justify-content:center;margin-top:24px;flex-wrap:wrap}
-.link-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;text-decoration:none;transition:all 0.3s}
-.link-btn.primary{background:var(--gradient);color:#fff}
-.link-btn.secondary{background:var(--card);color:var(--text);border:1px solid var(--border)}
-.link-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(99,102,241,0.2)}
+.phases{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:8px;overflow:hidden;margin-top:12px}
+.phase{background:var(--surface);padding:16px;text-align:center}
+.phase .num{font-size:1.2rem;font-weight:800;color:var(--accent);margin-bottom:4px}
+.phase .ttl{font-size:0.78rem;font-weight:700;margin-bottom:4px}
+.phase .desc{font-size:0.72rem;color:var(--muted)}
 
-.highlight-box{background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(168,85,247,0.08));border:1px solid rgba(99,102,241,0.2);border-radius:16px;padding:28px;margin:24px 0;text-align:center}
-.highlight-box .big{font-size:3rem;font-weight:900;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.highlight-box .sub{font-size:1rem;color:var(--muted);margin-top:8px}
-
-.chip{display:inline-block;padding:4px 12px;border-radius:8px;font-size:0.75rem;font-weight:600;margin:3px}
-.chip.blue{background:rgba(99,102,241,0.12);color:var(--accent2)}
-.chip.green{background:rgba(16,185,129,0.12);color:var(--green)}
-.chip.amber{background:rgba(245,158,11,0.12);color:var(--amber)}
-
-.fade-in{opacity:0;transform:translateY(20px);animation:fadeIn 0.8s ease forwards}
-@keyframes fadeIn{to{opacity:1;transform:translateY(0)}}
-.delay-1{animation-delay:0.1s}.delay-2{animation-delay:0.2s}.delay-3{animation-delay:0.3s}.delay-4{animation-delay:0.4s}
+.footer{text-align:center;padding:32px;color:var(--muted);font-size:0.75rem;border-top:1px solid var(--border);margin-top:20px}
+.footer a{color:var(--accent);text-decoration:none;font-weight:600}
 </style>
 </head>
 <body>
 
-<!-- Hero -->
-<div class="hero">
-  <div class="version">OPENENV HACKATHON × SCALER × META PYTORCH</div>
-  <h1>POLARIS v3</h1>
-  <p>Multi-Agent AI Governance Engine — A research-grade RL environment for training LLMs on negotiation, theory-of-mind, and long-horizon policy planning</p>
-  <p class="author">Built solo by <strong>Abhishek A S</strong> • 17 years old</p>
-  <div class="links">
-    <a href="https://github.com/abhishekascodes/POLARIS-V3" class="link-btn primary" target="_blank">⭐ GitHub</a>
-    <a href="/docs" class="link-btn secondary">📡 API Docs</a>
-    <a href="https://colab.research.google.com/" class="link-btn secondary">📓 Colab Demo</a>
+<div class="header"><div class="wrap">
+  <h1>POLARIS <span>v3</span></h1>
+  <p class="sub">A research-grade RL environment for training LLMs on multi-agent negotiation, theory-of-mind, and long-horizon governance planning.</p>
+  <div class="meta">
+    <span class="tag blue">OpenEnv Compatible</span>
+    <span class="tag">PyTorch</span>
+    <span class="tag">GRPO + QLoRA</span>
+    <span class="tag">5 LLM Agents</span>
+    <span class="tag">Solo Build — Abhishek A S, 17</span>
   </div>
+  <div class="nav">
+    <a href="https://github.com/abhishekascodes/POLARIS-V3" class="fill" target="_blank">GitHub</a>
+    <a href="/docs">API Docs</a>
+  </div>
+</div></div>
+
+<div class="wrap">
+
+<div class="kpi">
+  <div class="kpi-item green"><div class="val">+126.3%</div><div class="lbl">Reward Gain</div></div>
+  <div class="kpi-item accent"><div class="val">5</div><div class="lbl">LLM Ministers</div></div>
+  <div class="kpi-item"><div class="val">21</div><div class="lbl">State Metrics</div></div>
+  <div class="kpi-item"><div class="val">6</div><div class="lbl">Reward Components</div></div>
+  <div class="kpi-item red"><div class="val">0.22</div><div class="lbl">Llama 70B Score</div></div>
 </div>
 
-<!-- Key Stats -->
-<div class="stats-row fade-in">
-  <div class="stat-card green"><div class="num">+126.3%</div><div class="label">Reward Improvement</div></div>
-  <div class="stat-card accent"><div class="num">5</div><div class="label">LLM Ministers</div></div>
-  <div class="stat-card purple"><div class="num">21</div><div class="label">State Metrics</div></div>
-  <div class="stat-card amber"><div class="num">6</div><div class="label">Tasks</div></div>
-  <div class="stat-card red"><div class="num">0.22</div><div class="label">Llama 70B Score</div></div>
-</div>
-
-<div class="container">
-
-<!-- Training Results -->
-<div class="section fade-in delay-1">
-  <div class="section-title"><span>🚀</span> GRPO Training Results — Qwen 3B on RTX 5080</div>
-  
-  <div class="highlight-box">
-    <div class="big">13.4 → 30.2</div>
-    <div class="sub">Average episode reward — <strong style="color:var(--green)">+126.3% improvement</strong> in 13 minutes of training</div>
-  </div>
-
-  <div class="grid-2">
+<section>
+  <div class="sec-title"><div class="dot"></div>Training Results — Qwen 3B, QLoRA, RTX 5080</div>
+  <div class="grid">
     <div class="card">
-      <h3>Before vs After Training</h3>
-      <div class="bar-chart">
-        <div class="bar-row"><div class="bar-label">Before</div><div class="bar-track"><div class="bar-fill before" style="width:27%">13.4</div></div></div>
-        <div class="bar-row"><div class="bar-label">After GRPO</div><div class="bar-track"><div class="bar-fill after" style="width:60%">30.2</div></div></div>
+      <h3>Reward Improvement</h3>
+      <div class="bar-group">
+        <div class="bar-row"><div class="bar-lbl">Before</div><div class="bar-track"><div class="bar-fill" style="width:27%;background:#a8a29e">13.4</div></div></div>
+        <div class="bar-row"><div class="bar-lbl">After GRPO</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--accent)">30.2</div></div></div>
       </div>
-      <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">
-        <div><span style="color:var(--muted);font-size:0.8rem">Survival:</span> <span style="font-weight:700">0/5 → 1/5</span></div>
-        <div><span style="color:var(--muted);font-size:0.8rem">Model:</span> <span class="chip blue">Qwen 3B QLoRA</span></div>
-        <div><span style="color:var(--muted);font-size:0.8rem">Time:</span> <span class="chip green">788s</span></div>
-      </div>
+      <table class="clean" style="margin-top:16px">
+        <tr><td>Survival Rate</td><td><span class="pill r">0/5</span> → <span class="pill g">1/5</span></td></tr>
+        <tr><td>Training Time</td><td>788 sec (13 min)</td></tr>
+        <tr><td>Trainable Params</td><td>29.9M / 1.73B (1.73%)</td></tr>
+        <tr><td>Algorithm</td><td>GRPO + QLoRA 4-bit NF4</td></tr>
+      </table>
     </div>
     <div class="card">
       <h3>Curriculum Escalation</h3>
-      <div class="bar-chart">
-        <div class="bar-row"><div class="bar-label">Easy</div><div class="bar-track"><div class="bar-fill easy" style="width:82%">40.8 <span class="badge survived" style="margin-left:6px">3/3</span></div></div></div>
-        <div class="bar-row"><div class="bar-label">Medium</div><div class="bar-track"><div class="bar-fill medium" style="width:77%">38.3 <span class="badge survived" style="margin-left:6px">2/3</span></div></div></div>
-        <div class="bar-row"><div class="bar-label">Hard</div><div class="bar-track"><div class="bar-fill hard" style="width:50%">24.9</div></div></div>
-        <div class="bar-row"><div class="bar-label">Extreme</div><div class="bar-track"><div class="bar-fill extreme" style="width:45%">22.7</div></div></div>
+      <div class="bar-group">
+        <div class="bar-row"><div class="bar-lbl">Easy</div><div class="bar-track"><div class="bar-fill" style="width:82%;background:var(--green)">40.8 — 3/3 survived</div></div></div>
+        <div class="bar-row"><div class="bar-lbl">Medium</div><div class="bar-track"><div class="bar-fill" style="width:77%;background:var(--amber)">38.3 — 2/3 survived</div></div></div>
+        <div class="bar-row"><div class="bar-lbl">Hard</div><div class="bar-track"><div class="bar-fill" style="width:50%;background:var(--red)">24.9</div></div></div>
+        <div class="bar-row"><div class="bar-lbl">Extreme</div><div class="bar-track"><div class="bar-fill" style="width:45%;background:var(--purple)">22.7</div></div></div>
       </div>
+      <p style="font-size:0.78rem;color:var(--muted);margin-top:12px">Auto-curriculum escalates difficulty as agent improves. Trained agent dominates Easy/Medium but still challenged by Hard/Extreme — proving genuine difficulty scaling.</p>
     </div>
   </div>
-</div>
+</section>
 
-<!-- Llama Benchmark -->
-<div class="section fade-in delay-2">
-  <div class="section-title"><span>🧠</span> Llama 3.3 70B Benchmark — The Performance Collapse</div>
-  <div class="grid-2">
+<section>
+  <div class="sec-title"><div class="dot"></div>Llama 3.3 70B Benchmark — The Collapse</div>
+  <div class="grid">
     <div class="card">
-      <h3>Task Scores (Llama 70B via Groq)</h3>
-      <div class="bar-chart">
-        <div class="bar-row"><div class="bar-label">Easy Task</div><div class="bar-track"><div class="bar-fill easy" style="width:96%">0.96</div></div></div>
-        <div class="bar-row"><div class="bar-label">Balanced</div><div class="bar-track"><div class="bar-fill before" style="width:15%">0.15</div></div></div>
-        <div class="bar-row"><div class="bar-label">Hard Gov</div><div class="bar-track"><div class="bar-fill before" style="width:17%">0.17</div></div></div>
-        <div class="bar-row"><div class="bar-label">Multi-Agent</div><div class="bar-track"><div class="bar-fill hard" style="width:20%">0.20</div></div></div>
-        <div class="bar-row"><div class="bar-label">Negotiation</div><div class="bar-track"><div class="bar-fill hard" style="width:22%">0.22</div></div></div>
-      </div>
+      <h3>Per-Task Scores</h3>
+      <table class="clean">
+        <thead><tr><th>Task</th><th>Score</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Environment Recovery</td><td><strong>0.96</strong></td><td><span class="pill g">Trivial</span></td></tr>
+          <tr><td>Balanced Economy</td><td>0.15</td><td><span class="pill r">Collapsed</span></td></tr>
+          <tr><td>Sustainable Gov (Hard)</td><td>0.17</td><td><span class="pill r">Collapsed</span></td></tr>
+          <tr><td>Multi-Agent Council</td><td>0.20</td><td><span class="pill r">Collapsed</span></td></tr>
+          <tr><td>Negotiation Arena</td><td><strong>0.22</strong></td><td><span class="pill r">Collapsed</span></td></tr>
+        </tbody>
+      </table>
     </div>
     <div class="card">
       <h3>Key Finding</h3>
-      <div style="text-align:center;padding:20px 0">
-        <div style="font-size:3rem;font-weight:900;color:var(--green)">0.96</div>
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:20px">Easy task (single-objective)</div>
-        <div style="font-size:2rem;margin:8px 0">↓</div>
-        <div style="font-size:3rem;font-weight:900;color:var(--red)">0.22</div>
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:16px">Negotiation (multi-agent)</div>
-        <div style="font-size:0.85rem;color:var(--amber);font-weight:600">77% performance collapse under multi-agent pressure</div>
-        <div style="font-size:0.8rem;color:var(--muted);margin-top:8px">Theory-of-Mind accuracy: <strong style="color:var(--red)">0%</strong></div>
+      <div class="big-num">
+        <div class="n" style="color:var(--green)">0.96</div>
+        <div class="sub">Easy (single-objective)</div>
+        <div class="arr">77% performance drop</div>
+        <div class="n" style="color:var(--red)">0.22</div>
+        <div class="sub">Negotiation (multi-agent)</div>
+        <div class="badge" style="background:var(--red-bg);color:var(--red)">Theory-of-Mind: 0%</div>
       </div>
+      <p style="font-size:0.78rem;color:var(--muted);margin-top:8px;text-align:center">Frontier LLMs cannot predict minister vetoes. POLARIS creates difficulty that scales with model sophistication.</p>
     </div>
   </div>
-</div>
+</section>
 
-<!-- Architecture -->
-<div class="section fade-in delay-3">
-  <div class="section-title"><span>🏛️</span> Architecture — The Negotiation Protocol</div>
-  
-  <div class="grid-3">
-    <div class="card" style="text-align:center">
-      <h3>Phase 1: PROPOSE</h3>
-      <div style="font-size:2.5rem;margin:12px 0">📋</div>
-      <p style="font-size:0.85rem;color:var(--muted)">5 ministers generate LLM-powered proposals based on their persona, priorities, and political alignment</p>
-    </div>
-    <div class="card" style="text-align:center">
-      <h3>Phase 2: NEGOTIATE</h3>
-      <div style="font-size:2.5rem;margin:12px 0">🤝</div>
-      <p style="font-size:0.85rem;color:var(--muted)">Agent forms coalitions, predicts vetoes, and submits structured JSON with reasoning, stance, and targets</p>
-    </div>
-    <div class="card" style="text-align:center">
-      <h3>Phase 3: RESOLVE</h3>
-      <div style="font-size:2.5rem;margin:12px 0">⚖️</div>
-      <p style="font-size:0.85rem;color:var(--muted)">Council votes. Vetoes override majority. ToM score awarded for correct veto predictions. Reward assigned</p>
+<section>
+  <div class="sec-title"><div class="dot"></div>Architecture — Negotiation Protocol</div>
+  <div class="card">
+    <h3>The Council</h3>
+    <div class="minister-row">
+      <div class="minister"><div class="icon">CV</div><div class="nm">Chancellor Voss</div><div class="rl">Economy & Trade</div></div>
+      <div class="minister"><div class="icon">DO</div><div class="nm">Director Okafor</div><div class="rl">Industry & Energy</div></div>
+      <div class="minister"><div class="icon">DV</div><div class="nm">Dr. Vasquez</div><div class="rl">Science & Environment</div></div>
+      <div class="minister"><div class="icon">GT</div><div class="nm">General Tanaka</div><div class="rl">Defense & Security</div></div>
+      <div class="minister"><div class="icon">SM</div><div class="nm">Senator Mwangi</div><div class="rl">Social Welfare</div></div>
     </div>
   </div>
-
-  <!-- Ministers -->
-  <div style="margin-top:24px">
-    <div class="minister-grid">
-      <div class="minister"><div class="emoji">👔</div><div class="name">Chancellor Voss</div><div class="role">Economy & Trade</div></div>
-      <div class="minister"><div class="emoji">🏭</div><div class="name">Director Okafor</div><div class="role">Industry & Energy</div></div>
-      <div class="minister"><div class="emoji">🔬</div><div class="name">Dr. Vasquez</div><div class="role">Science & Environment</div></div>
-      <div class="minister"><div class="emoji">🎖️</div><div class="name">General Tanaka</div><div class="role">Defense & Security</div></div>
-      <div class="minister"><div class="emoji">📢</div><div class="name">Senator Mwangi</div><div class="role">Social Welfare</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- Reward System -->
-<div class="section fade-in delay-4">
-  <div class="section-title"><span>💰</span> 6-Component Composite Reward Function</div>
-  <div class="grid-2">
+  <div class="grid" style="margin-top:16px">
     <div class="card">
-      <h3>Reward Breakdown</h3>
-      <div class="reward-component"><div class="reward-dot" style="background:var(--green)"></div><div class="reward-name">Base Governance</div><div class="reward-weight">~40%</div></div>
-      <div class="reward-component"><div class="reward-dot" style="background:var(--accent)"></div><div class="reward-name">Pareto Optimality</div><div class="reward-weight">~15%</div></div>
-      <div class="reward-component"><div class="reward-dot" style="background:var(--purple)"></div><div class="reward-name">Theory-of-Mind</div><div class="reward-weight">~15%</div></div>
-      <div class="reward-component"><div class="reward-dot" style="background:var(--amber)"></div><div class="reward-name">Coalition Cooperation</div><div class="reward-weight">~10%</div></div>
-      <div class="reward-component"><div class="reward-dot" style="background:#06b6d4"></div><div class="reward-name">Briefing Compliance</div><div class="reward-weight">~10%</div></div>
-      <div class="reward-component"><div class="reward-dot" style="background:var(--red)"></div><div class="reward-name">Oscillation Penalty</div><div class="reward-weight">~10%</div></div>
+      <h3>Reward Function (6 Components)</h3>
+      <table class="clean">
+        <tr><td>Base Governance</td><td style="text-align:right"><span class="pill g">~40%</span></td></tr>
+        <tr><td>Pareto Optimality</td><td style="text-align:right"><span class="pill a">~15%</span></td></tr>
+        <tr><td>Theory-of-Mind</td><td style="text-align:right"><span class="pill p">~15%</span></td></tr>
+        <tr><td>Coalition Cooperation</td><td style="text-align:right"><span class="pill a">~10%</span></td></tr>
+        <tr><td>Briefing Compliance</td><td style="text-align:right"><span class="pill a">~10%</span></td></tr>
+        <tr><td>Oscillation Penalty</td><td style="text-align:right"><span class="pill r">~10%</span></td></tr>
+      </table>
     </div>
     <div class="card">
-      <h3>Training Pipeline</h3>
-      <div class="timeline">
-        <div class="timeline-item"><div class="phase">Phase 1 — Teach ToM (0-40%)</div><div class="desc">High weight on veto prediction to teach social cognition behavior</div></div>
-        <div class="timeline-item"><div class="phase">Phase 2 — Balance (40-70%)</div><div class="desc">Balanced ToM + governance rewards for stable multi-objective learning</div></div>
-        <div class="timeline-item"><div class="phase">Phase 3 — Stabilize (70-100%)</div><div class="desc">Governance-dominant with stable ToM. Agent masters policy decisions</div></div>
-      </div>
-      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-        <span class="chip blue">GRPO</span><span class="chip blue">QLoRA 4-bit</span><span class="chip blue">LoRA r=16</span><span class="chip green">RTX 5080</span>
+      <h3>Curriculum ToM Training</h3>
+      <div class="phases">
+        <div class="phase"><div class="num">01</div><div class="ttl">Teach ToM</div><div class="desc">0–40% of training. Heavy veto prediction weight.</div></div>
+        <div class="phase"><div class="num">02</div><div class="ttl">Balance</div><div class="desc">40–70%. Multi-objective optimization.</div></div>
+        <div class="phase"><div class="num">03</div><div class="ttl">Stabilize</div><div class="desc">70–100%. Governance-dominant, stable policy.</div></div>
       </div>
     </div>
   </div>
-</div>
-
-<!-- Theme Coverage -->
-<div class="section">
-  <div class="section-title"><span>🎯</span> Hackathon Theme Coverage</div>
-  <div class="grid-2">
-    <div class="card"><h3>🤖 Multi-Agent Interaction</h3><p style="font-size:0.85rem;color:var(--muted)">5 LLM-powered minister personas with negotiation, coalition formation, veto mechanics, and theory-of-mind scoring</p></div>
-    <div class="card"><h3>🧭 Long-Horizon Planning</h3><p style="font-size:0.85rem;color:var(--muted)">Intelligence briefings with deadlines across 200+ steps. Agents must remember and act on time-sensitive information</p></div>
-    <div class="card"><h3>🌍 World Modeling</h3><p style="font-size:0.85rem;color:var(--muted)">21-metric economic simulation with causal chains — GDP, pollution, healthcare, satisfaction, unemployment, and 16 more</p></div>
-    <div class="card"><h3>📈 Self-Improvement</h3><p style="font-size:0.85rem;color:var(--muted)">Auto-curriculum that escalates difficulty (Easy → Extreme) as the agent improves. +126.3% reward gain in 13 minutes</p></div>
-  </div>
-</div>
+</section>
 
 </div>
 
 <div class="footer">
-  <p><strong>POLARIS v3</strong> — Built for the Meta PyTorch OpenEnv Hackathon × Scaler School of Technology</p>
-  <p style="margin-top:8px"><a href="https://github.com/abhishekascodes/POLARIS-V3">GitHub</a> · <a href="https://huggingface.co/spaces/asabhishek/polaris-v3">HuggingFace Space</a> · <a href="/docs">API Docs</a></p>
+  <p><strong>POLARIS v3</strong> — Meta PyTorch OpenEnv Hackathon × Scaler School of Technology</p>
+  <p style="margin-top:6px"><a href="https://github.com/abhishekascodes/POLARIS-V3">GitHub</a> · <a href="/docs">API</a> · Built by Abhishek A S</p>
 </div>
 
 </body>
