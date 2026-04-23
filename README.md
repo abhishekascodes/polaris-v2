@@ -279,14 +279,15 @@ This proves:
 ### Training Pipeline (TRL + GRPO)
 
 ```
-Model: gpt2 → Llama (via HF credits at venue)
+Model: Qwen 2.5 3B Instruct (QLoRA 4-bit, LoRA r=16)
 Task: negotiation_arena (5 ministers, 200 steps)
-Algorithm: GRPO with 6-component reward function
+Algorithm: GRPO with 6-component composite reward
 Curriculum: Easy → Medium → Hard → Extreme (auto-escalation)
-Hardware: NVIDIA RTX 5080 (local) + HF compute credits (venue)
+Hardware: NVIDIA GeForce RTX 5080 Laptop GPU
+Training: 100 steps, 788 seconds, 29.9M trainable params
 ```
 
-> **Note**: Full GRPO training with HF compute credits will be performed onsite on 25-26 April. The training pipeline (`train_trl.py`) is fully validated and ready. The benchmark data above serves as the "before training" baseline.
+> **Result**: +126.3% reward improvement (13.4 → 30.2), first survival achieved (0/5 → 1/5). Trained agent dominates Easy (3/3) and Medium (2/3) curriculum levels while Hard and Extreme remain unsolved — proving genuine difficulty scaling.
 
 ---
 
@@ -395,8 +396,7 @@ openenv/
 |----------|------|
 | 🤗 HuggingFace Space | [huggingface.co/spaces/asabhishek/polaris-v3](https://huggingface.co/spaces/asabhishek/polaris-v3) |
 | 📦 GitHub Repository | [github.com/abhishekascodes/POLARIS-V3](https://github.com/abhishekascodes/POLARIS-V3) |
-| 📝 HuggingFace Blog | *Coming soon* |
-| 🎥 Demo Video | *Coming soon* |
+| 📓 Colab Demo | [POLARIS_v3_Demo.ipynb](https://colab.research.google.com/github/abhishekascodes/POLARIS-V3/blob/main/POLARIS_v3_Demo.ipynb) |
 
 ---
 
