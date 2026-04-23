@@ -299,13 +299,19 @@ Training: 100 steps, 788 seconds, 29.9M trainable params
 pip install -r requirements.txt
 ```
 
-### Run the Environment
+### Run the Interactive Dashboard
 
 ```bash
-# Start the server
-cd openenv && python -m uvicorn server.app:app --host 0.0.0.0 --port 7860
+# Start the full dashboard server (WebSocket + REST API + live simulation)
+cd openenv && python dashboard_server.py
 
-# Run inference
+# Open http://localhost:8765 → Landing page with interactive simulation
+# Open http://localhost:8765/control → Full 7-tab research dashboard
+```
+
+### Run LLM Inference
+
+```bash
 export API_BASE_URL="https://api.groq.com/openai/v1"
 export MODEL_NAME="llama-3.3-70b-versatile"
 export HF_TOKEN="your_key"
@@ -319,9 +325,11 @@ python inference.py
 python train_grpo.py --model Qwen/Qwen2.5-3B-Instruct --steps 100 --episodes 30
 ```
 
-### View Dashboard
+### Interactive Demo
 
-Open `http://localhost:7860` in your browser to see the real-time negotiation dashboard.
+- **Landing Page** (`/`): Scroll down to "Try the Simulation" — select any task, adjust chaos, and watch the agent negotiate in real-time
+- **Control Panel** (`/control`): 7-tab research dashboard with live charts, negotiation logs, causal analysis, risk alerts, and episode history
+- **HF Space**: [asabhishek-polaris-v3.hf.space](https://asabhishek-polaris-v3.hf.space) — fully deployed, same experience
 
 ---
 
@@ -374,17 +382,19 @@ openenv/
 │   ├── explainability.py       # Causal chains + counterfactuals
 │   ├── config.py               # 6 task configurations
 │   ├── tasks.py                # Deterministic graders
-│   └── app.py                  # FastAPI server
+│   └── app.py                  # REST API server
 ├── static/
-│   ├── style.css               # Dashboard styling
-│   └── app.js                  # Dashboard engine
-├── dashboard.html              # Real-time negotiation dashboard
+│   ├── style.css               # Control panel styling
+│   └── app.js                  # Control panel engine (7-tab dashboard)
+├── dashboard_server.py         # Full server: WebSocket + REST + simulation
+├── dashboard.html              # Landing page with interactive simulation
+├── control.html                # 7-tab research control panel
 ├── inference.py                # LLM inference with structured output
 ├── train_grpo.py               # GRPO training with curriculum ToM reward
 ├── POLARIS_v3_Demo.ipynb        # Colab demo notebook
 ├── openenv.yaml                # OpenEnv manifest
 ├── requirements.txt            # Dependencies
-├── Dockerfile                  # Container deployment
+├── Dockerfile                  # HF Spaces container deployment
 └── README.md                   # This file
 ```
 
