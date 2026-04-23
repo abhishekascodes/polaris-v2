@@ -66,87 +66,91 @@ def agent_policy(obs, step):
     neg = m.get("negotiation", {})
     proposals = neg.get("minister_proposals", [])
     trust = neg.get("institutional_trust", 0.6)
-    briefing = neg.get("diplomatic_briefing", "")
 
-    # --- Intelligent action selection based on state urgency ---
-    reasoning = ""
-    if sat < 20:
-        action = "increase_welfare"
-        reasoning = f"Critical satisfaction ({sat:.0f}), emergency welfare needed"
-    elif sat < 40:
-        action = "increase_welfare"
-        reasoning = f"Satisfaction declining ({sat:.0f}), prioritising public support"
-    elif poll > 220:
-        action = "enforce_emission_limits"
-        reasoning = f"Dangerous pollution ({poll:.0f}), enforcing limits"
-    elif poll > 160:
-        action = "restrict_polluting_industries"
-        reasoning = f"High pollution ({poll:.0f}), restricting industry"
-    elif gdp < 35:
-        action = "stimulate_economy"
-        reasoning = f"GDP critical ({gdp:.0f}), economic stimulus required"
+    # --- Multi-priority urgency system ---
+    # Build urgency scores for each dimension (higher = more urgent)
+    urgencies = {}
+
+    # Satisfaction: collapse at 5, so react much earlier
+    if sat < 15:
+        urgencies["increase_welfare"] = 100  # emergency
+    elif sat < 30:
+        urgencies["increase_welfare"] = 70
+    elif sat < 45:
+        urgencies["increase_welfare"] = 40
+
+    # GDP: collapse at 15
+    if gdp < 25:
+        urgencies["stimulate_economy"] = 100  # emergency
+    elif gdp < 40:
+        urgencies["stimulate_economy"] = 65
     elif gdp < 55:
-        action = "decrease_tax"
-        reasoning = f"GDP low ({gdp:.0f}), reducing tax to encourage growth"
-    elif hc < 30:
-        action = "invest_in_healthcare"
-        reasoning = f"Healthcare failing ({hc:.0f}), investing urgently"
-    elif unemp > 20:
-        action = "stimulate_economy"
-        reasoning = f"Unemployment high ({unemp:.1f}%), stimulating jobs"
+        urgencies["decrease_tax"] = 35
+
+    # Pollution: collapse at 290
+    if poll > 250:
+        urgencies["enforce_emission_limits"] = 100  # emergency
+    elif poll > 200:
+        urgencies["restrict_polluting_industries"] = 70
+    elif poll > 150:
+        urgencies["subsidize_renewables"] = 45
     elif poll > 120:
-        action = "subsidize_renewables"
-        reasoning = f"Pollution elevated ({poll:.0f}), green investment"
+        urgencies["subsidize_renewables"] = 25
+
+    # Healthcare
+    if hc < 25:
+        urgencies["invest_in_healthcare"] = 60
+    elif hc < 40:
+        urgencies["invest_in_healthcare"] = 30
+
+    # Unemployment
+    if unemp > 25:
+        urgencies["stimulate_economy"] = max(urgencies.get("stimulate_economy", 0), 55)
+    elif unemp > 15:
+        urgencies["stimulate_economy"] = max(urgencies.get("stimulate_economy", 0), 25)
+
+    # Renewables
+    if renew < 0.15:
+        urgencies["incentivize_clean_tech"] = 35
     elif renew < 0.25:
-        action = "incentivize_clean_tech"
-        reasoning = f"Renewable ratio low ({renew:.2f}), pushing clean tech"
-    elif edu < 40:
-        action = "invest_in_education"
-        reasoning = f"Education low ({edu:.0f}), investing"
-    elif sat < 55:
-        action = "increase_welfare"
-        reasoning = f"Satisfaction below target ({sat:.0f}), boosting welfare"
+        urgencies["incentivize_clean_tech"] = 20
+
+    # Education
+    if edu < 35:
+        urgencies["invest_in_education"] = 25
+
+    # Pick the most urgent action
+    if urgencies:
+        action = max(urgencies, key=urgencies.get)
+        urgency_val = urgencies[action]
+        reasoning = f"Priority response: {action.replace('_', ' ')} (urgency {urgency_val})"
     else:
-        # Balanced state — cycle through beneficial actions
+        # Everything is stable — rotate maintenance actions
         cycle = [
             "subsidize_renewables", "invest_in_education",
             "increase_welfare", "invest_in_healthcare",
             "incentivize_clean_tech", "stimulate_economy",
         ]
         action = cycle[step % len(cycle)]
-        reasoning = f"State balanced, maintaining diverse policy (step {step})"
+        reasoning = f"System stable, rotating maintenance policy (step {step})"
 
-    # --- Intelligent coalition targeting ---
-    # Read proposals to identify allies (who proposed similar actions)
+    # --- Coalition targeting ---
     coalition_target = []
     veto_prediction = []
     for p in proposals:
         minister = p.get("minister", "")
-        proposed = p.get("proposed_action", "")
         veto_threat = p.get("veto_threat", False)
         trust_level = p.get("trust_level", 0.5)
-        role = p.get("role", "")
-
-        # Target ministers with high trust as coalition partners
-        if trust_level > 0.6 and not veto_threat:
+        if trust_level > 0.5 and not veto_threat:
             coalition_target.append(minister)
-        # Predict vetoes from those with threats or opposing roles
-        if veto_threat:
-            veto_prediction.append(minister)
-        elif trust_level < 0.3:
+        if veto_threat or trust_level < 0.3:
             veto_prediction.append(minister)
 
-    # Fallback coalition: always try to include at least one minister
     if not coalition_target and MINISTER_NAMES:
         coalition_target = [MINISTER_NAMES[step % len(MINISTER_NAMES)]]
 
-    # Determine stance based on trust level
-    if trust < 0.4:
-        stance = "assertive"
-    elif trust > 0.7:
-        stance = "cooperative"
-    else:
-        stance = "balanced"
+    # Stance
+    stance = "assertive" if trust < 0.4 else ("cooperative" if trust > 0.7 else "balanced")
 
     return {
         "action": action,
