@@ -9,6 +9,9 @@
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#fafaf9;--surface:#fff;--text:#1c1917;--muted:#78716c;--border:#e7e5e4;--accent:#2563eb;--accent-light:#dbeafe;--green:#16a34a;--green-bg:#dcfce7;--red:#dc2626;--red-bg:#fee2e2;--amber:#d97706;--amber-bg:#fef3c7;--purple:#7c3aed;--purple-bg:#ede9fe}
 body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+.tp{display:inline-flex;align-items:center;padding:5px 12px;border-radius:6px;font-size:0.72rem;font-weight:600;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;font-family:inherit;transition:all 0.15s}
+.tp:hover{border-color:#bfdbfe;color:var(--accent);background:var(--accent-light)}
+.tp.active{background:var(--accent-light);border-color:#bfdbfe;color:var(--accent)}
 
 .header{background:var(--surface);border-bottom:1px solid var(--border);padding:40px 0 32px}
 .wrap{max-width:1080px;margin:0 auto;padding:0 32px}
@@ -217,6 +220,203 @@ table.clean tr:last-child td{border-bottom:none}
 </section>
 
 </div>
+
+<!-- Interactive Simulation -->
+<section style="padding:36px 0;border-top:1px solid var(--border)">
+<div class="wrap">
+  <div class="sec-title"><div class="dot"></div>Try the Simulation</div>
+  <p style="font-size:0.85rem;color:var(--muted);margin-bottom:20px">Run the actual POLARIS environment. Adjust chaos to increase difficulty.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Configuration</h3>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div>
+          <label style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;display:block;margin-bottom:8px">Task</label>
+          <input type="hidden" id="sim-task" value="sustainable_governance">
+          <div id="task-pills" style="display:flex;flex-wrap:wrap;gap:6px">
+            <button class="tp" data-val="balanced_economy" onclick="pickTask(this)">Balanced Economy</button>
+            <button class="tp" data-val="environmental_recovery" onclick="pickTask(this)">Environmental Recovery</button>
+            <button class="tp active" data-val="sustainable_governance" onclick="pickTask(this)">Sustainable Governance</button>
+            <button class="tp" data-val="multi_agent_council" onclick="pickTask(this)">Multi-Agent Council</button>
+            <button class="tp" data-val="negotiation_arena" onclick="pickTask(this)">Negotiation Arena</button>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+            <label style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600">Chaos Level</label>
+            <span id="sim-chaos-val" style="font-size:0.82rem;font-weight:700;color:var(--text)">0.30</span>
+          </div>
+          <div style="position:relative;height:6px;background:#e7e5e4;border-radius:3px;cursor:pointer">
+            <div id="chaos-fill" style="position:absolute;left:0;top:0;height:100%;width:30%;background:var(--accent);border-radius:3px;transition:width 0.1s"></div>
+            <input type="range" id="sim-chaos" min="0" max="100" value="30" style="position:absolute;left:0;top:-4px;width:100%;height:14px;opacity:0;cursor:pointer;margin:0">
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px">
+            <span style="font-size:0.62rem;color:var(--muted)">Stable</span>
+            <span style="font-size:0.62rem;color:var(--muted)">Extreme</span>
+          </div>
+        </div>
+        <button id="sim-run" onclick="runSim()" style="width:100%;padding:12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;font-size:0.85rem;cursor:pointer;font-family:inherit;transition:all 0.15s">
+          Run Simulation
+        </button>
+        <div id="sim-progress" style="display:none">
+          <div style="background:#f5f5f4;border-radius:4px;overflow:hidden;height:3px">
+            <div id="sim-bar" style="width:0%;height:100%;background:var(--accent);transition:width 0.3s"></div>
+          </div>
+          <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;text-align:center" id="sim-status">Simulating...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Results</h3>
+      <div id="sim-results">
+        <div style="text-align:center;padding:20px 0;color:var(--muted);font-size:0.82rem">
+          Press <strong>Run</strong> to start
+        </div>
+      </div>
+      <div id="sim-results-data" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <div style="background:var(--surface);padding:16px;text-align:center">
+            <div id="r-steps" style="font-size:1.5rem;font-weight:800;color:var(--text);letter-spacing:-0.02em">--</div>
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;font-weight:500">Steps</div>
+          </div>
+          <div style="background:var(--surface);padding:16px;text-align:center">
+            <div id="r-outcome" style="font-size:1.5rem;font-weight:800;letter-spacing:-0.02em">--</div>
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;font-weight:500">Outcome</div>
+          </div>
+          <div style="background:var(--surface);padding:16px;text-align:center">
+            <div id="r-score" style="font-size:1.5rem;font-weight:800;color:var(--accent);letter-spacing:-0.02em">--</div>
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;font-weight:500">Score</div>
+          </div>
+          <div style="background:var(--surface);padding:16px;text-align:center">
+            <div id="r-coalitions" style="font-size:1.5rem;font-weight:800;color:var(--text);letter-spacing:-0.02em">--</div>
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;font-weight:500">Coalitions</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden">
+          <div style="background:var(--surface);padding:10px;text-align:center">
+            <div id="r-vetoes" style="font-weight:700;font-size:0.95rem;color:var(--text)">--</div>
+            <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Vetoes</div>
+          </div>
+          <div style="background:var(--surface);padding:10px;text-align:center">
+            <div id="r-reward" style="font-weight:700;font-size:0.95rem;color:var(--green)">--</div>
+            <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Reward</div>
+          </div>
+          <div style="background:var(--surface);padding:10px;text-align:center">
+            <div id="r-events" style="font-weight:700;font-size:0.95rem;color:var(--text)">--</div>
+            <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Events</div>
+          </div>
+        </div>
+        <div id="r-narrative" style="margin-top:10px;font-size:0.78rem;color:var(--muted);padding:10px 12px;background:#f5f5f4;border-radius:8px;border-left:3px solid var(--accent);display:none;line-height:1.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:16px">
+    <a href="/control" style="font-size:0.78rem;color:var(--accent);text-decoration:none;font-weight:600">Open Full Control Panel</a>
+  </div>
+</div>
+</section>
+
+<script>
+function pickTask(el){
+  document.querySelectorAll('.tp').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sim-task').value=el.dataset.val;
+}
+document.getElementById('sim-chaos').addEventListener('input',function(){
+  document.getElementById('sim-chaos-val').textContent=(this.value/100).toFixed(2);
+  document.getElementById('chaos-fill').style.width=this.value+'%';
+});
+
+let simWs=null;
+let simData={steps:0,coalitions:0,vetoes:0,events:0,reward:0,score:0,collapsed:false,lastAction:''};
+
+function runSim(){
+  const btn=document.getElementById('sim-run');
+  btn.disabled=true;btn.textContent='Running...';btn.style.opacity='0.6';
+  document.getElementById('sim-progress').style.display='block';
+  document.getElementById('sim-results').style.display='none';
+  document.getElementById('sim-results-data').style.display='block';
+  document.getElementById('r-narrative').style.display='none';
+  simData={steps:0,coalitions:0,vetoes:0,events:0,reward:0,score:0,collapsed:false,lastAction:''};
+  updateResults();
+
+  const task=document.getElementById('sim-task').value;
+  const chaos=parseInt(document.getElementById('sim-chaos').value)/100;
+
+  if(simWs)try{simWs.close()}catch(e){}
+  const proto=location.protocol==='https:'?'wss:':'ws:';
+  simWs=new WebSocket(proto+'//'+location.host+'/ws');
+
+  simWs.onopen=function(){
+    simWs.send(JSON.stringify({cmd:'start',seed:Math.floor(Math.random()*9999),chaos:chaos,task_id:task}));
+    simWs.send(JSON.stringify({cmd:'speed',value:10}));
+  };
+
+  simWs.onmessage=function(e){
+    const m=JSON.parse(e.data);
+    if(m.type==='step'){
+      simData.steps=m.step;
+      simData.reward=m.reward;
+      if(m.council&&m.council.coalition_formed)simData.coalitions++;
+      simData.vetoes+=(m.council&&m.council.vetoes?m.council.vetoes.length:0);
+      simData.events+=(m.active_events?m.active_events.length:0);
+      simData.lastAction=m.action||'';
+      const pct=Math.min(100,m.step/150*100);
+      document.getElementById('sim-bar').style.width=pct+'%';
+      document.getElementById('sim-status').textContent='Step '+m.step+' \u00b7 '+simData.lastAction.replace(/_/g,' ');
+      updateResults();
+    }
+    if(m.type==='episode_end'){
+      simData.score=m.score;
+      simData.collapsed=m.collapsed;
+      simData.steps=m.steps;
+      finishSim();
+    }
+  };
+  simWs.onerror=function(){finishSim()};
+}
+
+function updateResults(){
+  document.getElementById('r-steps').textContent=simData.steps;
+  document.getElementById('r-reward').textContent=simData.reward.toFixed(3);
+  document.getElementById('r-coalitions').textContent=simData.coalitions;
+  document.getElementById('r-vetoes').textContent=simData.vetoes;
+  document.getElementById('r-events').textContent=simData.events;
+  document.getElementById('r-outcome').textContent='Running';
+  document.getElementById('r-outcome').style.color='var(--accent)';
+  document.getElementById('r-score').textContent='--';
+}
+
+function finishSim(){
+  const btn=document.getElementById('sim-run');
+  btn.disabled=false;btn.textContent='Run Again';btn.style.opacity='1';
+  document.getElementById('sim-bar').style.width='100%';
+  document.getElementById('sim-status').textContent='Complete';
+
+  document.getElementById('r-steps').textContent=simData.steps;
+  document.getElementById('r-score').textContent=simData.score.toFixed(2);
+  if(simData.collapsed){
+    document.getElementById('r-outcome').textContent='Collapsed';
+    document.getElementById('r-outcome').style.color='var(--red)';
+  }else{
+    document.getElementById('r-outcome').textContent='Survived';
+    document.getElementById('r-outcome').style.color='var(--green)';
+  }
+
+  const narr=document.getElementById('r-narrative');
+  const task=document.getElementById('sim-task').value.replace(/_/g,' ');
+  const chaos=document.getElementById('sim-chaos-val').textContent;
+  narr.style.display='block';
+  if(simData.collapsed){
+    narr.innerHTML='Agent collapsed after <strong>'+simData.steps+'</strong> steps on <strong>'+task+'</strong> (chaos '+chaos+'). Score: <strong>'+simData.score.toFixed(3)+'</strong>. '+simData.coalitions+' coalitions formed, '+simData.vetoes+' vetoes issued. This demonstrates the difficulty scaling POLARIS creates under multi-agent pressure.';
+  }else{
+    narr.innerHTML='Agent survived '+simData.steps+' steps on <strong>'+task+'</strong> (chaos '+chaos+') with score <strong>'+simData.score.toFixed(3)+'</strong>. '+simData.coalitions+' coalitions, '+simData.vetoes+' vetoes.';
+  }
+}
+</script>
 
 <div class="footer">
   <p><strong>POLARIS v3</strong> — Meta PyTorch OpenEnv Hackathon &times; Scaler School of Technology</p>

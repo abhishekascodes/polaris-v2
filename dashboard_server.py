@@ -327,6 +327,10 @@ async def run_episode():
 
 @app.get("/")
 async def root():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "dashboard.html"))
+
+@app.get("/control")
+async def control_panel():
     return FileResponse(os.path.join(os.path.dirname(__file__), "control.html"))
 
 @app.websocket("/ws")
