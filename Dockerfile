@@ -33,5 +33,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 EXPOSE 7860
 
-# Run the server
-CMD ["python", "-m", "uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "7860"]
+# Run the dashboard server (has WebSocket + REST + landing page)
+CMD ["python", "-m", "uvicorn", "dashboard_server:app", "--host", "0.0.0.0", "--port", "7860"]

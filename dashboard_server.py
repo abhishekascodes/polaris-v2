@@ -336,6 +336,29 @@ async def run_episode():
 
 # ── API Routes ──
 
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
+
+@app.post("/reset")
+async def api_reset(request: dict = None):
+    if request is None:
+        request = {}
+    env = PolicyEnvironment()
+    obs = env.reset(seed=request.get("seed"), task_id=request.get("task_id", "environmental_recovery"))
+    return {"observation": obs.metadata, "reward": obs.reward, "done": obs.done}
+
+@app.post("/step")
+async def api_step(request: dict):
+    env = PolicyEnvironment()
+    env.reset()
+    obs = env.step(request.get("action", {"action": "subsidize_renewables"}))
+    return {"observation": obs.metadata, "reward": obs.reward, "done": obs.done}
+
+@app.get("/tasks")
+async def list_tasks():
+    return {tid: {"description": cfg["description"], "max_steps": cfg["max_steps"]} for tid, cfg in TASK_CONFIGS.items()}
+
 @app.get("/")
 async def root():
     return FileResponse(os.path.join(os.path.dirname(__file__), "dashboard.html"))
