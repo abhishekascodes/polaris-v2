@@ -67,72 +67,79 @@ def agent_policy(obs, step):
     proposals = neg.get("minister_proposals", [])
     trust = neg.get("institutional_trust", 0.6)
 
-    # --- Multi-priority urgency system ---
-    # Build urgency scores for each dimension (higher = more urgent)
+    # --- Collapse-proximity urgency system ---
+    # Score based on how close each metric is to its collapse threshold
+    # Collapse conditions: GDP < 15, Pollution > 290, Satisfaction < 5
+    
+    # Distance to collapse (0 = collapsed, higher = safer)
+    gdp_safety = max(0, gdp - 15)       # 0 when gdp=15
+    sat_safety = max(0, sat - 5)         # 0 when sat=5
+    poll_safety = max(0, 290 - poll)     # 0 when poll=290
+    
     urgencies = {}
-
-    # Satisfaction: collapse at 5, so react much earlier
-    if sat < 15:
-        urgencies["increase_welfare"] = 100  # emergency
-    elif sat < 30:
-        urgencies["increase_welfare"] = 70
-    elif sat < 45:
-        urgencies["increase_welfare"] = 40
-
-    # GDP: collapse at 15
-    if gdp < 25:
-        urgencies["stimulate_economy"] = 100  # emergency
-    elif gdp < 40:
-        urgencies["stimulate_economy"] = 65
-    elif gdp < 55:
-        urgencies["decrease_tax"] = 35
-
-    # Pollution: collapse at 290
-    if poll > 250:
-        urgencies["enforce_emission_limits"] = 100  # emergency
-    elif poll > 200:
+    
+    # GDP crisis: use decrease_tax (less oscillation than stimulate_economy)
+    if gdp_safety < 10:
+        urgencies["decrease_tax"] = 200       # absolute emergency
+    elif gdp_safety < 25:
+        urgencies["stimulate_economy"] = 120
+    elif gdp_safety < 40:
+        urgencies["decrease_tax"] = 50
+    
+    # Satisfaction crisis
+    if sat_safety < 10:
+        urgencies["increase_welfare"] = 180   # emergency
+    elif sat_safety < 25:
+        urgencies["increase_welfare"] = 80
+    elif sat_safety < 40:
+        urgencies["increase_welfare"] = 35
+    
+    # Pollution crisis
+    if poll_safety < 40:
+        urgencies["enforce_emission_limits"] = 160
+    elif poll_safety < 90:
         urgencies["restrict_polluting_industries"] = 70
-    elif poll > 150:
-        urgencies["subsidize_renewables"] = 45
-    elif poll > 120:
-        urgencies["subsidize_renewables"] = 25
-
-    # Healthcare
+    elif poll_safety < 170:
+        urgencies["subsidize_renewables"] = 30
+    
+    # Dual crisis override: if both GDP and satisfaction are struggling,
+    # alternate to prevent one from collapsing
+    if gdp_safety < 25 and sat_safety < 25:
+        # Whichever is closer to collapse gets priority
+        if gdp_safety < sat_safety:
+            urgencies["decrease_tax"] = 250
+        else:
+            urgencies["increase_welfare"] = 250
+    
+    # Secondary metrics (lower priority)
     if hc < 25:
-        urgencies["invest_in_healthcare"] = 60
+        urgencies["invest_in_healthcare"] = 45
     elif hc < 40:
-        urgencies["invest_in_healthcare"] = 30
-
-    # Unemployment
+        urgencies["invest_in_healthcare"] = 20
+    
     if unemp > 25:
-        urgencies["stimulate_economy"] = max(urgencies.get("stimulate_economy", 0), 55)
-    elif unemp > 15:
-        urgencies["stimulate_economy"] = max(urgencies.get("stimulate_economy", 0), 25)
-
-    # Renewables
+        urgencies["stimulate_economy"] = max(urgencies.get("stimulate_economy", 0), 40)
+    
     if renew < 0.15:
-        urgencies["incentivize_clean_tech"] = 35
-    elif renew < 0.25:
-        urgencies["incentivize_clean_tech"] = 20
-
-    # Education
+        urgencies["incentivize_clean_tech"] = 25
+    
     if edu < 35:
-        urgencies["invest_in_education"] = 25
+        urgencies["invest_in_education"] = 15
 
     # Pick the most urgent action
     if urgencies:
         action = max(urgencies, key=urgencies.get)
         urgency_val = urgencies[action]
-        reasoning = f"Priority response: {action.replace('_', ' ')} (urgency {urgency_val})"
+        reasoning = f"Priority: {action.replace('_', ' ')} (urgency {urgency_val})"
     else:
         # Everything is stable — rotate maintenance actions
         cycle = [
             "subsidize_renewables", "invest_in_education",
             "increase_welfare", "invest_in_healthcare",
-            "incentivize_clean_tech", "stimulate_economy",
+            "incentivize_clean_tech", "decrease_tax",
         ]
         action = cycle[step % len(cycle)]
-        reasoning = f"System stable, rotating maintenance policy (step {step})"
+        reasoning = f"System stable, rotating policy (step {step})"
 
     # --- Coalition targeting ---
     coalition_target = []
