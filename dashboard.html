@@ -337,6 +337,7 @@ function runSim(){
   const btn=document.getElementById('sim-run');
   btn.disabled=true;btn.textContent='Running...';btn.style.opacity='0.6';
   document.getElementById('sim-progress').style.display='block';
+  document.getElementById('sim-bar').style.width='0%';
   document.getElementById('sim-results').style.display='none';
   document.getElementById('sim-results-data').style.display='block';
   document.getElementById('r-narrative').style.display='none';
@@ -345,21 +346,32 @@ function runSim(){
 
   const task=document.getElementById('sim-task').value;
   const chaos=parseInt(document.getElementById('sim-chaos').value)/100;
+  const seed=Math.floor(Math.random()*9999);
 
   if(simWs)try{simWs.close()}catch(e){}
   const proto=location.protocol==='https:'?'wss:':'ws:';
   simWs=new WebSocket(proto+'//'+location.host+'/ws');
 
+  let started=false;
+  let simTimeout=setTimeout(function(){if(!started)finishSim()},30000);
+
   simWs.onopen=function(){
-    simWs.send(JSON.stringify({cmd:'start',seed:Math.floor(Math.random()*9999),chaos:chaos,task_id:task}));
-    simWs.send(JSON.stringify({cmd:'speed',value:10}));
+    // Always reset first to clear any running simulation, then start fresh
+    simWs.send(JSON.stringify({cmd:'stop'}));
+    simWs.send(JSON.stringify({cmd:'reset',seed:seed,task_id:task,chaos:chaos}));
+    setTimeout(function(){
+      simWs.send(JSON.stringify({cmd:'start',seed:seed,chaos:chaos,task_id:task}));
+      simWs.send(JSON.stringify({cmd:'speed',value:10}));
+    },300);
   };
 
   simWs.onmessage=function(e){
     const m=JSON.parse(e.data);
+    if(m.type==='init'||m.type==='reset')return; // skip init/reset acks
     if(m.type==='step'){
+      started=true;
       simData.steps=m.step;
-      simData.reward=m.reward;
+      simData.reward=m.reward||0;
       if(m.council&&m.council.coalition_formed)simData.coalitions++;
       simData.vetoes+=(m.council&&m.council.vetoes?m.council.vetoes.length:0);
       simData.events+=(m.active_events?m.active_events.length:0);
@@ -370,13 +382,15 @@ function runSim(){
       updateResults();
     }
     if(m.type==='episode_end'){
-      simData.score=m.score;
-      simData.collapsed=m.collapsed;
-      simData.steps=m.steps;
+      clearTimeout(simTimeout);
+      simData.score=m.score||0;
+      simData.collapsed=m.collapsed||false;
+      simData.steps=m.steps||simData.steps;
       finishSim();
     }
   };
-  simWs.onerror=function(){finishSim()};
+  simWs.onerror=function(){clearTimeout(simTimeout);finishSim()};
+  simWs.onclose=function(){if(!started){}};  // silent close ok
 }
 
 function updateResults(){

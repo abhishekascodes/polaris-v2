@@ -357,8 +357,10 @@ async def websocket_endpoint(ws: WebSocket):
                 sim.seed = msg.get("seed", random.randint(0, 9999))
                 sim.task_id = msg.get("task_id", sim.task_id)
                 sim.chaos = msg.get("chaos", sim.chaos)
-                if not sim.running:
-                    asyncio.create_task(run_episode())
+                if sim.running:
+                    sim.running = False
+                    await asyncio.sleep(0.2)
+                asyncio.create_task(run_episode())
             
             elif cmd == "stop":
                 sim.running = False
